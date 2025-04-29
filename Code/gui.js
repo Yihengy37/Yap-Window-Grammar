@@ -1189,9 +1189,8 @@ a:hover {
       <button id="hide-left-sidebar" class="setting-button">☰</button>
       <button id="user-activity" class="setting-button">👥</button>
       <button id="modify-channel" class="setting-button" style="display: none">✏️</button>
-      <button id="dark-mode" class="setting-button">${isDark ? "☀️" : "🌙"}</button>
       <div class="dropdown-container">
-        <button id="g-setting" class="setting-button">G</button>
+        <button id="g-setting" class="setting-button">🇬</button>
         <div id="g-dropdown" class="settings-dropdown">
           <div class="dropdown-option" data-value="on">On</div>
           <div class="dropdown-option" data-value="ask">Ask</div>
