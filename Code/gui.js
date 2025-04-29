@@ -230,6 +230,41 @@
 	background: ${isDark ? "#505050" : "#dee2e6"};
 }
 
+.dropdown-container {
+  position: relative;
+  display: inline-block;
+}
+
+.settings-dropdown {
+  position: absolute;
+  top: 40px;
+  left: -10px;
+  background-color: ${isDark ? "#444" : "#fff"};
+  border: 1px solid ${isDark ? "#666" : "#ddd"};
+  border-radius: 4px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  z-index: 1000;
+  min-width: 100px;
+  display: none;
+}
+
+.dropdown-option {
+  padding: 8px 12px;
+  color: ${isDark ? "#eee" : "#333"};
+  cursor: pointer;
+  transition: background-color 0.2s;
+  font-size: 14px;
+}
+
+.dropdown-option:hover {
+  background-color: ${isDark ? "#555" : "#f0f0f0"};
+}
+
+.dropdown-option.selected {
+  background-color: ${isDark ? "#666" : "#e0e0e0"};
+  font-weight: bold;
+}
+
 #left-sidebar {
 	width: 20%;
 	min-width: 180px;
@@ -1154,6 +1189,16 @@ a:hover {
       <button id="hide-left-sidebar" class="setting-button">☰</button>
       <button id="user-activity" class="setting-button">👥</button>
       <button id="modify-channel" class="setting-button" style="display: none">✏️</button>
+      <button id="dark-mode" class="setting-button">${isDark ? "☀️" : "🌙"}</button>
+      <div class="dropdown-container">
+        <button id="g-setting" class="setting-button">G</button>
+        <div id="g-dropdown" class="settings-dropdown">
+          <div class="dropdown-option" data-value="on">On</div>
+          <div class="dropdown-option" data-value="ask">Ask</div>
+          <div class="dropdown-option" data-value="off">Off</div>
+        </div>
+      </div>
+      <button id="read-all" class="setting-button">📖</button>
    </div>
    <div id="lower-chat" class="chat">
       <div id="left-sidebar">
