@@ -1681,185 +1681,362 @@ dropdownOptions.forEach(option => {
   }
 
   async function sendMessage() {
-    if (isSending) return;
-    isSending = true;
-    sendButton.disabled = true;
-    removeFakeHighlights();
-    const messagesRef = ref(database, `Chats/${currentChat}`);
-    let message = document
-      .getElementById("message-input")
-      .innerHTML.substring(0, 5000);
+  if (isSending) return;
+  isSending = true;
+  sendButton.disabled = true;
+  removeFakeHighlights();
+  const messagesRef = ref(database, `Chats/${currentChat}`);
+  let message = document
+    .getElementById("message-input")
+    .innerHTML.substring(0, 5000);
 
-    let textContent = document
-      .getElementById("message-input")
-      .textContent.substring(0, 5000);
+  let textContent = document
+    .getElementById("message-input")
+    .textContent.substring(0, 5000);
 
-    if (!textContent.trim() && attachments.length === 0) {
-      isSending = false;
-      sendButton.disabled = false;
-      return;
+  if (!textContent.trim() && attachments.length === 0) {
+    isSending = false;
+    sendButton.disabled = false;
+    return;
+  }
+
+  let pureMessage = document
+    .getElementById("message-input")
+    .textContent.substring(0, 2500);
+
+  noFilesMessage = message;
+
+  attachments.forEach((att, index) => {
+    if (!att.file) return;
+    if (att.type === "image") {
+      message += `<br><img src="${att.file}" style="max-width:150px;max-height:150px;border-radius:5px;margin:5px 0;">`;
+    } else if (att.type === "file") {
+      const linkId = `attachment-link-${Date.now()}-${index}`;
+      const safeName = att.name?.replace(/"/g, "&quot;") || "file";
+
+      message += `<br><a href="javascript:void(0)" class="file-attachment" data-file="${encodeURIComponent(att.file)}" data-filename="${encodeURIComponent(safeName)}" data-mime="${encodeURIComponent(att.file.split(",")[0].split(":")[1].split(";")[0])}"
+    style="text-decoration:underline;color:${isDark ? "#66b2ff" : "#007bff"};">📎 ${safeName}</a>`;
     }
+  });
+  message = joypixels.shortnameToImage(message);
+  const div = document.createElement("div");
+  div.innerHTML = message;
 
-    let pureMessage = document
-      .getElementById("message-input")
-      .textContent.substring(0, 2500);
+  function processNode(node) {
+    if (node.nodeType === 3) {
+      if (node.parentNode.tagName !== "A") {
+        const fragment = document.createDocumentFragment();
+        const tempDiv = document.createElement("div");
+        tempDiv.innerHTML = autoDetectLinks(node.textContent);
 
-    noFilesMessage = message;
-
-    attachments.forEach((att, index) => {
-      if (!att.file) return;
-      if (att.type === "image") {
-        message += `<br><img src="${att.file}" style="max-width:150px;max-height:150px;border-radius:5px;margin:5px 0;">`;
-      } else if (att.type === "file") {
-        const linkId = `attachment-link-${Date.now()}-${index}`;
-        const safeName = att.name?.replace(/"/g, "&quot;") || "file";
-
-        message += `<br><a href="javascript:void(0)" class="file-attachment" data-file="${encodeURIComponent(att.file)}" data-filename="${encodeURIComponent(safeName)}" data-mime="${encodeURIComponent(att.file.split(",")[0].split(":")[1].split(";")[0])}"
-      style="text-decoration:underline;color:${isDark ? "#66b2ff" : "#007bff"};">📎 ${safeName}</a>`;
-      }
-    });
-    message = joypixels.shortnameToImage(message);
-    const div = document.createElement("div");
-    div.innerHTML = message;
-
-    function processNode(node) {
-      if (node.nodeType === 3) {
-        if (node.parentNode.tagName !== "A") {
-          const fragment = document.createDocumentFragment();
-          const tempDiv = document.createElement("div");
-          tempDiv.innerHTML = autoDetectLinks(node.textContent);
-
-          while (tempDiv.firstChild) {
-            fragment.appendChild(tempDiv.firstChild);
-          }
-
-          node.parentNode.replaceChild(fragment, node);
+        while (tempDiv.firstChild) {
+          fragment.appendChild(tempDiv.firstChild);
         }
-      } else if (node.nodeType === 1) {
-        Array.from(node.childNodes).forEach((child) => {
-          processNode(child);
-        });
+
+        node.parentNode.replaceChild(fragment, node);
       }
+    } else if (node.nodeType === 1) {
+      Array.from(node.childNodes).forEach((child) => {
+        processNode(child);
+      });
     }
+  }
 
-    Array.from(div.childNodes).forEach((node) => {
-      processNode(node);
-    });
+  Array.from(div.childNodes).forEach((node) => {
+    processNode(node);
+  });
 
-    message = div.innerHTML;
+  message = div.innerHTML;
 
-    resetMessageInput();
-    hideAllColorGrids();
-    clearAttachments();
-    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+  resetMessageInput();
+  hideAllColorGrids();
+  clearAttachments();
+  messagesDiv.scrollTop = messagesDiv.scrollHeight;
 
-    if (message) {
-      // Check if the "yes" option is selected in the dropdown
-      const gDropdown = document.getElementById('g-dropdown');
-      const selectedOption = gDropdown.querySelector('.dropdown-option.selected');
-      const isYesSelected = selectedOption && selectedOption.dataset.value === 'on';
+  if (message) {
+    // Check which option is selected in the dropdown
+    const gDropdown = document.getElementById('g-dropdown');
+    const selectedOption = gDropdown.querySelector('.dropdown-option.selected');
+    const selectedValue = selectedOption ? selectedOption.dataset.value : 'off';
+    
+    if (selectedValue === 'on') {
+      // Use the AI to process the message with grammar correction
+      let d = Date.now();
+
+      const messagesSnapshot = await get(messagesRef);
+      const messages = messagesSnapshot.val() || {};
+      const messageEntries = Object.entries(messages)
+        .sort((a, b) => new Date(a[1].Date) - new Date(b[1].Date))
+        .slice(-20);
+
+      const API_KEYS = [
+        "AIzaSyDJEIVUqeVkrbtMPnBvB8QWd9VuUQQQBjg",
+        "AIzaSyB42CD-hXRnfq3eNpLWnF9at5kHePI5qgQ",
+        "AIzaSyAzipn1IBvbNyQUiiJq6cAkE6hAlShce94",
+        "AIzaSyC1fFINANR_tuOM18Lo3HF9WXosX-6BHLM",
+        "AIzaSyAT94ASgr96OQuR9GjVxpS1pee5o5CZ6H0",
+      ];
+
+      const chatHistory = messageEntries
+        .map(([id, msg]) => {
+          return `${msg.User}: ${msg.Message.substring(0, 500)}`;
+        })
+        .join("\n");
+
+      const fullPrompt = `Edit the message "${noFilesMessage}" to give it perfect spelling, grammar, punctuation, etc. UNLESS the message starts with the "/" character, in which case do not change the message. Do not change the meaning of the message. Your response should consist of ONLY the edited message and nothing else. If the message or part of the message is unintelligible, simply don't edit it and respond with the original message word for word - for example, if the user prompted "ijeaseh", your response should be "ijeaseh", not "(No change)", or "I'm not sure what you mean"`;
+
+      let aiReply = null;
+      let successfulRequest = false;
+
+      for (const API_KEY of API_KEYS) {
+        try {
+          const response = await fetch(
+            "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=" +
+              API_KEY,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                contents: [{ role: "user", parts: [{ text: fullPrompt }] }],
+              }),
+            },
+          ).then((res) => res.json());
+
+          const responseText =
+            response.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (responseText && responseText.trim() !== "") {
+            aiReply = responseText;
+            successfulRequest = true;
+            break;
+          }
+        } catch (error) {
+          console.error(`Error with API key ${API_KEY}:`, error);
+        }
+      }
+
+      if (!successfulRequest) {
+        aiReply = message; // Keep original message if AI processing fails
+      }
+
+      // Replace user's message with AI response
+      message = aiReply;
       
-      if (isYesSelected) {
-        // Use the AI to process the message with [PLACEHOLDER] prompt
-        let d = Date.now();
+      // Send the AI-modified message as the user's message
+      const newMessageRef = push(messagesRef);
+      await update(newMessageRef, {
+        User: email,
+        Message: message,
+        Date: Date.now(),
+      });
+    } 
+    else if (selectedValue === 'ask') {
+      // Create fake messages to ask the user if they want to use the AI-corrected version
+      const messagesDiv = document.getElementById('messages');
+      
+      // Create fake user message
+      const fakeUserMessageDiv = document.createElement('div');
+      fakeUserMessageDiv.className = 'message sent fake-message';
+      fakeUserMessageDiv.innerHTML = message;
+      messagesDiv.appendChild(fakeUserMessageDiv);
+      
+      // Get AI-corrected version
+      const API_KEYS = [
+        "AIzaSyDJEIVUqeVkrbtMPnBvB8QWd9VuUQQQBjg",
+        "AIzaSyB42CD-hXRnfq3eNpLWnF9at5kHePI5qgQ",
+        "AIzaSyAzipn1IBvbNyQUiiJq6cAkE6hAlShce94",
+        "AIzaSyC1fFINANR_tuOM18Lo3HF9WXosX-6BHLM",
+        "AIzaSyAT94ASgr96OQuR9GjVxpS1pee5o5CZ6H0",
+      ];
 
-        const messagesSnapshot = await get(messagesRef);
-        const messages = messagesSnapshot.val() || {};
-        const messageEntries = Object.entries(messages)
-          .sort((a, b) => new Date(a[1].Date) - new Date(b[1].Date))
-          .slice(-20);
+      const fullPrompt = `Edit the message "${noFilesMessage}" to give it perfect spelling, grammar, punctuation, etc. UNLESS the message starts with the "/" character, in which case do not change the message. Do not change the meaning of the message. Your response should consist of ONLY the edited message and nothing else. If the message or part of the message is unintelligible, simply don't edit it and respond with the original message word for word - for example, if the user prompted "ijeaseh", your response should be "ijeaseh", not "(No change)", or "I'm not sure what you mean"`;
 
-        const API_KEYS = [
-          "AIzaSyDJEIVUqeVkrbtMPnBvB8QWd9VuUQQQBjg",
-          "AIzaSyB42CD-hXRnfq3eNpLWnF9at5kHePI5qgQ",
-          "AIzaSyAzipn1IBvbNyQUiiJq6cAkE6hAlShce94",
-          "AIzaSyC1fFINANR_tuOM18Lo3HF9WXosX-6BHLM",
-          "AIzaSyAT94ASgr96OQuR9GjVxpS1pee5o5CZ6H0",
-        ];
+      let aiReply = null;
+      let successfulRequest = false;
 
-        const chatHistory = messageEntries
-          .map(([id, msg]) => {
-            return `${msg.User}: ${msg.Message.substring(0, 500)}`;
-          })
-          .join("\n");
+      for (const API_KEY of API_KEYS) {
+        try {
+          const response = await fetch(
+            "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=" +
+              API_KEY,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                contents: [{ role: "user", parts: [{ text: fullPrompt }] }],
+              }),
+            },
+          ).then((res) => res.json());
 
-        const fullPrompt = `Edit the message "${noFilesMessage}" to give it perfect spelling, grammar, punctuation, etc. UNLESS the message starts with the "/" character, in which case do not change the message. Do not change the meaning of the message. Your response should consist of ONLY the edited message and nothing else. If the message or part of the message is unintelligible, simply don't edit it and respond with the original message word for word - for example, if the user prompted "ijeaseh", your response should be "ijeaseh", not "(No change)", or "I'm not sure what you mean"`;
-
-        let aiReply = null;
-        let successfulRequest = false;
-
-        for (const API_KEY of API_KEYS) {
-          try {
-            const response = await fetch(
-              "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=" +
-                API_KEY,
-              {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  contents: [{ role: "user", parts: [{ text: fullPrompt }] }],
-                }),
-              },
-            ).then((res) => res.json());
-
-            const responseText =
-              response.candidates?.[0]?.content?.parts?.[0]?.text;
-            if (responseText && responseText.trim() !== "") {
-              aiReply = responseText;
-              successfulRequest = true;
-              break;
-            }
-          } catch (error) {
-            console.error(`Error with API key ${API_KEY}:`, error);
+          const responseText =
+            response.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (responseText && responseText.trim() !== "") {
+            aiReply = responseText;
+            successfulRequest = true;
+            break;
           }
+        } catch (error) {
+          console.error(`Error with API key ${API_KEY}:`, error);
         }
+      }
 
-        if (!successfulRequest) {
-          aiReply = message; // Keep original message if AI processing fails
-        }
-
-        // Replace user's message with AI response
-        message = aiReply;
+      if (!successfulRequest) {
+        aiReply = message; // Keep original message if AI processing fails
         
-        // Send the AI-modified message as the user's message
+        // Send the original message and exit
         const newMessageRef = push(messagesRef);
         await update(newMessageRef, {
           User: email,
           Message: message,
           Date: Date.now(),
         });
-      } else if (pureMessage.trim().toLowerCase().startsWith("/ai ")) {
-        let d = Date.now();
-        const question = message.substring(4).trim();
-
-        const messagesSnapshot = await get(messagesRef);
-        const messages = messagesSnapshot.val() || {};
-        const messageEntries = Object.entries(messages)
-          .sort((a, b) => new Date(a[1].Date) - new Date(b[1].Date))
-          .slice(-20);
-
-        const userMessageRef = push(messagesRef);
-        await update(userMessageRef, {
+        
+        isSending = false;
+        sendButton.disabled = false;
+        return;
+      }
+      
+      // Store both versions for use with buttons
+      const originalMessage = message;
+      const correctedMessage = aiReply;
+      
+      // Create Jimmy-Bot message with buttons
+      const fakeBotMessageDiv = document.createElement('div');
+      fakeBotMessageDiv.className = 'message bot jimmy-bot fake-message';
+      
+      let botContent = '';
+      if (originalMessage === correctedMessage) {
+        botContent = `<div class="jimmy-bot-header">[Jimmy-Bot]</div><div class="jimmy-bot-content">Your message looks good! No changes needed.</div>`;
+        
+        fakeBotMessageDiv.innerHTML = botContent;
+        messagesDiv.appendChild(fakeBotMessageDiv);
+        
+        // Just send the original message after a short delay
+        setTimeout(async () => {
+          // Remove fake messages
+          document.querySelectorAll('.fake-message').forEach(el => el.remove());
+          
+          // Send the original message
+          const newMessageRef = push(messagesRef);
+          await update(newMessageRef, {
+            User: email,
+            Message: originalMessage,
+            Date: Date.now(),
+          });
+          
+          isSending = false;
+          sendButton.disabled = false;
+          messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }, 1500);
+        
+        return;
+      } else {
+        botContent = `<div class="jimmy-bot-header">[Jimmy-Bot]</div>
+          <div class="jimmy-bot-content">Would you like to send this improved version of your message?</div>
+          <div class="corrected-message">${correctedMessage}</div>
+          <div class="jimmy-bot-buttons">
+            <button class="jimmy-yes-btn">Yes</button>
+            <button class="jimmy-no-btn">No, send original</button>
+          </div>`;
+      }
+      
+      fakeBotMessageDiv.innerHTML = botContent;
+      messagesDiv.appendChild(fakeBotMessageDiv);
+      
+      // Scroll to the bottom to show the new messages
+      messagesDiv.scrollTop = messagesDiv.scrollHeight;
+      
+      // Add event listeners for the buttons
+      const yesBtn = fakeBotMessageDiv.querySelector('.jimmy-yes-btn');
+      const noBtn = fakeBotMessageDiv.querySelector('.jimmy-no-btn');
+      
+      yesBtn.addEventListener('click', async () => {
+        // Remove fake messages
+        document.querySelectorAll('.fake-message').forEach(el => el.remove());
+        
+        // Send the corrected message
+        const newMessageRef = push(messagesRef);
+        await update(newMessageRef, {
           User: email,
-          Message: message,
-          Date: d,
+          Message: correctedMessage,
+          Date: Date.now(),
         });
+        
+        isSending = false;
+        sendButton.disabled = false;
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+      });
+      
+      noBtn.addEventListener('click', async () => {
+        // Remove fake messages
+        document.querySelectorAll('.fake-message').forEach(el => el.remove());
+        
+        // Send the original message
+        const newMessageRef = push(messagesRef);
+        await update(newMessageRef, {
+          User: email,
+          Message: originalMessage,
+          Date: Date.now(),
+        });
+        
+        isSending = false;
+        sendButton.disabled = false;
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+      });
+      
+      // If the user doesn't click either button, send the original after 30 seconds
+      setTimeout(async () => {
+        if (document.querySelectorAll('.fake-message').length > 0) {
+          // Remove fake messages
+          document.querySelectorAll('.fake-message').forEach(el => el.remove());
+          
+          // Send the original message
+          const newMessageRef = push(messagesRef);
+          await update(newMessageRef, {
+            User: email,
+            Message: originalMessage,
+            Date: Date.now(),
+          });
+          
+          isSending = false;
+          sendButton.disabled = false;
+          messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+      }, 30000);
+      
+      return; // Exit the function to prevent sending the message immediately
+    }
+    else if (pureMessage.trim().toLowerCase().startsWith("/ai ")) {
+      let d = Date.now();
+      const question = message.substring(4).trim();
 
-        const API_KEYS = [
-          "AIzaSyDJEIVUqeVkrbtMPnBvB8QWd9VuUQQQBjg",
-          "AIzaSyB42CD-hXRnfq3eNpLWnF9at5kHePI5qgQ",
-          "AIzaSyAzipn1IBvbNyQUiiJq6cAkE6hAlShce94",
-          "AIzaSyC1fFINANR_tuOM18Lo3HF9WXosX-6BHLM",
-          "AIzaSyAT94ASgr96OQuR9GjVxpS1pee5o5CZ6H0",
-        ];
+      const messagesSnapshot = await get(messagesRef);
+      const messages = messagesSnapshot.val() || {};
+      const messageEntries = Object.entries(messages)
+        .sort((a, b) => new Date(a[1].Date) - new Date(b[1].Date))
+        .slice(-20);
 
-        const chatHistory = messageEntries
-          .map(([id, msg]) => {
-            return `${msg.User}: ${msg.Message.substring(0, 500)}`;
-          })
-          .join("\n");
+      const userMessageRef = push(messagesRef);
+      await update(userMessageRef, {
+        User: email,
+        Message: message,
+        Date: d,
+      });
 
-        const fullPrompt = `The following is a chat log for context. Messages from "[AI]" are past responses you have given, but you do not have memory of them.
+      const API_KEYS = [
+        "AIzaSyDJEIVUqeVkrbtMPnBvB8QWd9VuUQQQBjg",
+        "AIzaSyB42CD-hXRnfq3eNpLWnF9at5kHePI5qgQ",
+        "AIzaSyAzipn1IBvbNyQUiiJq6cAkE6hAlShce94",
+        "AIzaSyC1fFINANR_tuOM18Lo3HF9WXosX-6BHLM",
+        "AIzaSyAT94ASgr96OQuR9GjVxpS1pee5o5CZ6H0",
+      ];
+
+      const chatHistory = messageEntries
+        .map(([id, msg]) => {
+          return `${msg.User}: ${msg.Message.substring(0, 500)}`;
+        })
+        .join("\n");
+
+      const fullPrompt = `The following is a chat log for context. Messages from "[AI]" are past responses you have given, but you do not have memory of them.
 
 Chat Log:
 ${chatHistory}
@@ -1883,118 +2060,168 @@ User: ${email} asks: ${noFilesMessage}
 Make sure to follow all the instructions while answering questions.
 `;
 
-        let aiReply = null;
-        let successfulRequest = false;
+      let aiReply = null;
+      let successfulRequest = false;
 
-        for (const API_KEY of API_KEYS) {
-          try {
-            const response = await fetch(
-              "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=" +
-                API_KEY,
-              {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  contents: [{ role: "user", parts: [{ text: fullPrompt }] }],
-                }),
-              },
-            ).then((res) => res.json());
+      for (const API_KEY of API_KEYS) {
+        try {
+          const response = await fetch(
+            "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=" +
+              API_KEY,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                contents: [{ role: "user", parts: [{ text: fullPrompt }] }],
+              }),
+            },
+          ).then((res) => res.json());
 
-            const responseText =
-              response.candidates?.[0]?.content?.parts?.[0]?.text;
-            if (responseText && responseText.trim() !== "") {
-              aiReply = responseText;
-              successfulRequest = true;
-              break;
-            }
-          } catch (error) {
-            console.error(`Error with API key ${API_KEY}:`, error);
+          const responseText =
+            response.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (responseText && responseText.trim() !== "") {
+            aiReply = responseText;
+            successfulRequest = true;
+            break;
           }
+        } catch (error) {
+          console.error(`Error with API key ${API_KEY}:`, error);
         }
+      }
 
-        if (!successfulRequest) {
-          aiReply =
-            "Sorry, AI assistance is temporarily unavailable. Please try again later.";
-        }
+      if (!successfulRequest) {
+        aiReply =
+          "Sorry, AI assistance is temporarily unavailable. Please try again later.";
+      }
 
-        const aiMessageRef = push(messagesRef);
-        await update(aiMessageRef, {
-          User: "[AI]",
-          Message: aiReply,
-          Date: d,
-        });
-      } else if (pureMessage.trim().toLowerCase().startsWith("/eod")) {
-        const parts = message.split(" ");
-        let yesChance = 45;
-        let noChance = 45;
-        let maybeChance = 10;
+      const aiMessageRef = push(messagesRef);
+      await update(aiMessageRef, {
+        User: "[AI]",
+        Message: aiReply,
+        Date: d,
+      });
+    } else if (pureMessage.trim().toLowerCase().startsWith("/eod")) {
+      const parts = message.split(" ");
+      let yesChance = 45;
+      let noChance = 45;
+      let maybeChance = 10;
 
-        if (parts.length >= 4) {
-          const parsedYes = parseFloat(parts[1]);
-          const parsedNo = parseFloat(parts[2]);
-          const parsedMaybe = parseFloat(parts[3]);
+      if (parts.length >= 4) {
+        const parsedYes = parseFloat(parts[1]);
+        const parsedNo = parseFloat(parts[2]);
+        const parsedMaybe = parseFloat(parts[3]);
 
-          if (!isNaN(parsedYes) && !isNaN(parsedNo) && !isNaN(parsedMaybe)) {
-            if (parsedYes + parsedNo + parsedMaybe === 100) {
-              yesChance = parsedYes;
-              noChance = parsedNo;
-              maybeChance = parsedMaybe;
-            } else {
-              const total = parsedYes + parsedNo + parsedMaybe;
-              if (total > 0) {
-                yesChance = (parsedYes / total) * 100;
-                noChance = (parsedNo / total) * 100;
-                maybeChance = (parsedMaybe / total) * 100;
-              }
-            }
-          }
-        }
-
-        const userMessageRef = push(messagesRef);
-        await update(userMessageRef, {
-          User: email,
-          Message: message,
-          Date: Date.now(),
-        });
-
-        const random = Math.random() * 100;
-        let result;
-
-        if (random < yesChance) {
-          result = "Yes";
-        } else if (random < yesChance + noChance) {
-          result = "No";
-        } else {
-          result = "Maybe";
-        }
-
-        const botMessageRef = push(messagesRef);
-        await update(botMessageRef, {
-          User: "[EOD]",
-          Message: `${result}`,
-          Date: Date.now(),
-        });
-      } else if (pureMessage.trim().toLowerCase().startsWith("/coinflip")) {
-        const parts = message.split(" ");
-        let headsChance = 50;
-        let tailsChance = 50;
-
-        if (parts.length === 3) {
-          headsChance = parseFloat(parts[1]);
-          tailsChance = parseFloat(parts[2]);
-
-          if (headsChance + tailsChance !== 100) {
-            const total = headsChance + tailsChance;
+        if (!isNaN(parsedYes) && !isNaN(parsedNo) && !isNaN(parsedMaybe)) {
+          if (parsedYes + parsedNo + parsedMaybe === 100) {
+            yesChance = parsedYes;
+            noChance = parsedNo;
+            maybeChance = parsedMaybe;
+          } else {
+            const total = parsedYes + parsedNo + parsedMaybe;
             if (total > 0) {
-              headsChance = (headsChance / total) * 100;
-              tailsChance = (tailsChance / total) * 100;
-            } else {
-              headsChance = 50;
-              tailsChance = 50;
+              yesChance = (parsedYes / total) * 100;
+              noChance = (parsedNo / total) * 100;
+              maybeChance = (parsedMaybe / total) * 100;
             }
           }
         }
+      }
 
+      const userMessageRef = push(messagesRef);
+      await update(userMessageRef, {
+        User: email,
+        Message: message,
+        Date: Date.now(),
+      });
+
+      const random = Math.random() * 100;
+      let result;
+
+      if (random < yesChance) {
+        result = "Yes";
+      } else if (random < yesChance + noChance) {
+        result = "No";
+      } else {
+        result = "Maybe";
+      }
+
+      const botMessageRef = push(messagesRef);
+      await update(botMessageRef, {
+        User: "[EOD]",
+        Message: `${result}`,
+        Date: Date.now(),
+      });
+    } else if (pureMessage.trim().toLowerCase().startsWith("/coinflip")) {
+      const parts = message.split(" ");
+      let headsChance = 50;
+      let tailsChance = 50;
+
+      if (parts.length === 3) {
+        headsChance = parseFloat(parts[1]);
+        tailsChance = parseFloat(parts[2]);
+
+        if (headsChance + tailsChance !== 100) {
+          const total = headsChance + tailsChance;
+          if (total > 0) {
+            headsChance = (headsChance / total) * 100;
+            tailsChance = (tailsChance / total) * 100;
+          } else {
+            headsChance = 50;
+            tailsChance = 50;
+          }
+        }
+      }
+
+      const userMessageRef = push(messagesRef);
+      await update(userMessageRef, {
+        User: email,
+        Message: message,
+        Date: Date.now(),
+      });
+
+      const random = Math.random() * 100;
+      const result = random < headsChance ? "Heads" : "Tails";
+      const chances = `(${headsChance.toFixed(1)}% Heads, ${tailsChance.toFixed(1)}% Tails)`;
+
+      const botMessageRef = push(messagesRef);
+      await update(botMessageRef, {
+        User: "[RNG]",
+        Message: `🎲 Coin flip result: ${result}`,
+        Date: Date.now(),
+      });
+    } else if (pureMessage.trim().toLowerCase().startsWith("/roll ")) {
+      const sides = parseInt(message.split(" ")[1]);
+
+      const userMessageRef = push(messagesRef);
+      await update(userMessageRef, {
+        User: email,
+        Message: message,
+        Date: Date.now(),
+      });
+
+      if (isNaN(sides) || sides < 1) {
+        const errorMessageRef = push(messagesRef);
+        await update(errorMessageRef, {
+          User: BOT_USERS.RNG,
+          Message: "Please specify a valid number of sides (e.g., /roll 6)",
+          Date: Date.now(),
+        });
+        return;
+      }
+
+      const result = Math.floor(Math.random() * sides) + 1;
+      const botMessageRef = push(messagesRef);
+      await update(botMessageRef, {
+        User: BOT_USERS.RNG,
+        Message: `🎲 Rolling a ${sides}-sided die: ${result}`,
+        Date: Date.now(),
+      });
+    } else if (pureMessage.trim().toLowerCase().startsWith("/snake")) {
+      const temp_email =
+        typeof email !== "undefined"
+          ? email.replace(/\./g, "*")
+          : "anonymous";
+      if (pureMessage.trim().toLowerCase() === "/snake leaderboard") {
         const userMessageRef = push(messagesRef);
         await update(userMessageRef, {
           User: email,
@@ -2002,154 +2229,104 @@ Make sure to follow all the instructions while answering questions.
           Date: Date.now(),
         });
 
-        const random = Math.random() * 100;
-        const result = random < headsChance ? "Heads" : "Tails";
-        const chances = `(${headsChance.toFixed(1)}% Heads, ${tailsChance.toFixed(1)}% Tails)`;
+        try {
+          const scoresRef = ref(database, "SnakeScores");
+          const scoresSnapshot = await get(scoresRef);
+          const scores = scoresSnapshot.val() || {};
 
-        const botMessageRef = push(messagesRef);
-        await update(botMessageRef, {
-          User: "[RNG]",
-          Message: `🎲 Coin flip result: ${result}`,
-          Date: Date.now(),
-        });
-      } else if (pureMessage.trim().toLowerCase().startsWith("/roll ")) {
-        const sides = parseInt(message.split(" ")[1]);
+          const sortedScores = Object.entries(scores)
+            .map(([userEmail, score]) => ({ email: userEmail, score: score }))
+            .sort((a, b) => b.score - a.score);
 
-        const userMessageRef = push(messagesRef);
-        await update(userMessageRef, {
-          User: email,
-          Message: message,
-          Date: Date.now(),
-        });
+          let currentUserRank = sortedScores.findIndex(
+            (entry) => entry.email === temp_email,
+          );
+          let currentUserScore =
+            currentUserRank !== -1 ? sortedScores[currentUserRank].score : 0;
+          currentUserRank =
+            currentUserRank !== -1 ? currentUserRank + 1 : "-";
 
-        if (isNaN(sides) || sides < 1) {
+          const pushMessage = async (text) => {
+            const msgRef = push(messagesRef);
+            await update(msgRef, {
+              User: "[Snake Game]",
+              Message: text,
+              Date: Date.now(),
+            });
+          };
+
+          await pushMessage("🐍 SNAKE GAME LEADERBOARD 🐍");
+
+          if (sortedScores.length === 0) {
+            await pushMessage("No scores yet! Be the first to play!");
+          } else {
+            const topPlayers = sortedScores.slice(0, 10);
+            for (let i = 0; i < topPlayers.length; i++) {
+              let playerText = `${i + 1}. ${topPlayers[i].email.replace(/\*/g, ".")}: ${topPlayers[i].score}`;
+              await pushMessage(playerText);
+            }
+          }
+        } catch (error) {
+          console.error("Error retrieving leaderboard:", error);
           const errorMessageRef = push(messagesRef);
           await update(errorMessageRef, {
-            User: BOT_USERS.RNG,
-            Message: "Please specify a valid number of sides (e.g., /roll 6)",
+            User: "[Snake Game]",
+            Message: "Error retrieving leaderboard. Please try again later.",
             Date: Date.now(),
           });
-          return;
-        }
-
-        const result = Math.floor(Math.random() * sides) + 1;
-        const botMessageRef = push(messagesRef);
-        await update(botMessageRef, {
-          User: BOT_USERS.RNG,
-          Message: `🎲 Rolling a ${sides}-sided die: ${result}`,
-          Date: Date.now(),
-        });
-      } else if (pureMessage.trim().toLowerCase().startsWith("/snake")) {
-        const temp_email =
-          typeof email !== "undefined"
-            ? email.replace(/\./g, "*")
-            : "anonymous";
-        if (pureMessage.trim().toLowerCase() === "/snake leaderboard") {
-          const userMessageRef = push(messagesRef);
-          await update(userMessageRef, {
-            User: email,
-            Message: message,
-            Date: Date.now(),
-          });
-
-          try {
-            const scoresRef = ref(database, "SnakeScores");
-            const scoresSnapshot = await get(scoresRef);
-            const scores = scoresSnapshot.val() || {};
-
-            const sortedScores = Object.entries(scores)
-              .map(([userEmail, score]) => ({ email: userEmail, score: score }))
-              .sort((a, b) => b.score - a.score);
-
-            let currentUserRank = sortedScores.findIndex(
-              (entry) => entry.email === temp_email,
-            );
-            let currentUserScore =
-              currentUserRank !== -1 ? sortedScores[currentUserRank].score : 0;
-            currentUserRank =
-              currentUserRank !== -1 ? currentUserRank + 1 : "-";
-
-            const pushMessage = async (text) => {
-              const msgRef = push(messagesRef);
-              await update(msgRef, {
-                User: "[Snake Game]",
-                Message: text,
-                Date: Date.now(),
-              });
-            };
-
-            await pushMessage("🐍 SNAKE GAME LEADERBOARD 🐍");
-
-            if (sortedScores.length === 0) {
-              await pushMessage("No scores yet! Be the first to play!");
-            } else {
-              const topPlayers = sortedScores.slice(0, 10);
-              for (let i = 0; i < topPlayers.length; i++) {
-                let playerText = `${i + 1}. ${topPlayers[i].email.replace(/\*/g, ".")}: ${topPlayers[i].score}`;
-                await pushMessage(playerText);
-              }
-            }
-          } catch (error) {
-            console.error("Error retrieving leaderboard:", error);
-            const errorMessageRef = push(messagesRef);
-            await update(errorMessageRef, {
-              User: "[Snake Game]",
-              Message: "Error retrieving leaderboard. Please try again later.",
-              Date: Date.now(),
-            });
-          }
-        } else {
-          const now = new Date();
-
-          const pacificNow = new Date(
-            now.toLocaleString("en-US", { timeZone: "America/Los_Angeles" }),
-          );
-          const day = pacificNow.getDay();
-          const hour = pacificNow.getHours();
-          const minute = pacificNow.getMinutes();
-
-          const schoolStart = 495;
-          const schoolEnd = 920;
-          const currentTime = hour * 60 + minute;
-
-          if (
-            day >= 1 &&
-            day <= 5 &&
-            currentTime >= schoolStart &&
-            currentTime <= schoolEnd
-          ) {
-            const errorMessageRef = push(messagesRef);
-            await update(errorMessageRef, {
-              User: "[Snake Game]",
-              Message: "No Gaming During School!",
-              Date: Date.now(),
-            });
-          } else {
-            createSnakeGame();
-          }
         }
       } else {
-        const newMessageRef = push(messagesRef);
-        await update(newMessageRef, {
-          User: email,
-          Message: message,
-          Date: Date.now(),
-        });
-      }
+        const now = new Date();
 
-      const snapshot = await get(messagesRef);
-      const messages = snapshot.val() || {};
+        const pacificNow = new Date(
+          now.toLocaleString("en-US", { timeZone: "America/Los_Angeles" }),
+        );
+        const day = pacificNow.getDay();
+        const hour = pacificNow.getHours();
+        const minute = pacificNow.getMinutes();
 
-      const allMessageIds = Object.keys(messages).sort();
-      if (allMessageIds.length > 0) {
-        const latestMessageId = allMessageIds[allMessageIds.length - 1];
-        await markMessagesAsRead(currentChat, latestMessageId);
+        const schoolStart = 495;
+        const schoolEnd = 920;
+        const currentTime = hour * 60 + minute;
+
+        if (
+          day >= 1 &&
+          day <= 5 &&
+          currentTime >= schoolStart &&
+          currentTime <= schoolEnd
+        ) {
+          const errorMessageRef = push(messagesRef);
+          await update(errorMessageRef, {
+            User: "[Snake Game]",
+            Message: "No Gaming During School!",
+            Date: Date.now(),
+          });
+        } else {
+          createSnakeGame();
+        }
       }
+    } else {
+      const newMessageRef = push(messagesRef);
+      await update(newMessageRef, {
+        User: email,
+        Message: message,
+        Date: Date.now(),
+      });
     }
-    document.getElementById("bookmarklet-gui").scrollTop = 0;
-    isSending = false;
-    sendButton.disabled = false;
+
+    const snapshot = await get(messagesRef);
+    const messages = snapshot.val() || {};
+
+    const allMessageIds = Object.keys(messages).sort();
+    if (allMessageIds.length > 0) {
+      const latestMessageId = allMessageIds[allMessageIds.length - 1];
+      await markMessagesAsRead(currentChat, latestMessageId);
+    }
   }
+  document.getElementById("bookmarklet-gui").scrollTop = 0;
+  isSending = false;
+  sendButton.disabled = false;
+}
 
   function formatDate(timestamp) {
     const messageDate = new Date(timestamp);
