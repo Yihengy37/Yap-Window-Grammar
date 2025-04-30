@@ -1934,15 +1934,13 @@
                 fakeBotMessageDiv.className = 'message bot jimmy-bot fake-message';
 
                 let botContent = '';
-                else {
-                    botContent = `<div class="jimmy-bot-header">[Jimmy-Bot]</div>
-                        <div class="jimmy-bot-content">Would you like to send this improved version of your message?</div>
-                        <div class="corrected-message">${correctedMessage}</div>
-                        <div class="jimmy-bot-buttons">
-                        <button class="jimmy-yes-btn">Yes</button>
-                        <button class="jimmy-no-btn">No, send original</button>
-                        </div>`;
-                }
+                botContent = `<div class="jimmy-bot-header">[Jimmy-Bot]</div>
+                    <div class="jimmy-bot-content">Would you like to send this improved version of your message?</div>
+                    <div class="corrected-message">${correctedMessage}</div>
+                    <div class="jimmy-bot-buttons">
+                    <button class="jimmy-yes-btn">Yes</button>
+                    <button class="jimmy-no-btn">No, send original</button>
+                    </div>`;
 
                 fakeBotMessageDiv.innerHTML = botContent;
                 messagesDiv.appendChild(fakeBotMessageDiv);
