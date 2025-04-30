@@ -1680,7 +1680,7 @@ dropdownOptions.forEach(option => {
     });
   }
 
-  async function sendMessage() {
+async function sendMessage() {
     if (isSending) return;
     isSending = true;
     sendButton.disabled = true;
@@ -1754,7 +1754,83 @@ dropdownOptions.forEach(option => {
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
 
     if (message) {
-      if (pureMessage.trim().toLowerCase().startsWith("/ai ")) {
+      // Check if the "yes" option is selected in the dropdown
+      const gDropdown = document.getElementById('g-dropdown');
+      const selectedOption = gDropdown.querySelector('.dropdown-option.selected');
+      const isYesSelected = selectedOption && selectedOption.dataset.value === 'on';
+      
+      if (isYesSelected) {
+        // Use the AI to process the message with [PLACEHOLDER] prompt
+        let d = Date.now();
+
+        const messagesSnapshot = await get(messagesRef);
+        const messages = messagesSnapshot.val() || {};
+        const messageEntries = Object.entries(messages)
+          .sort((a, b) => new Date(a[1].Date) - new Date(b[1].Date))
+          .slice(-20);
+
+        const API_KEYS = [
+          "AIzaSyDJEIVUqeVkrbtMPnBvB8QWd9VuUQQQBjg",
+          "AIzaSyB42CD-hXRnfq3eNpLWnF9at5kHePI5qgQ",
+          "AIzaSyAzipn1IBvbNyQUiiJq6cAkE6hAlShce94",
+          "AIzaSyC1fFINANR_tuOM18Lo3HF9WXosX-6BHLM",
+          "AIzaSyAT94ASgr96OQuR9GjVxpS1pee5o5CZ6H0",
+        ];
+
+        const chatHistory = messageEntries
+          .map(([id, msg]) => {
+            return `${msg.User}: ${msg.Message.substring(0, 500)}`;
+          })
+          .join("\n");
+
+        const fullPrompt = `[PLACEHOLDER]
+        
+User's original message: ${noFilesMessage}`;
+
+        let aiReply = null;
+        let successfulRequest = false;
+
+        for (const API_KEY of API_KEYS) {
+          try {
+            const response = await fetch(
+              "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=" +
+                API_KEY,
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  contents: [{ role: "user", parts: [{ text: fullPrompt }] }],
+                }),
+              },
+            ).then((res) => res.json());
+
+            const responseText =
+              response.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (responseText && responseText.trim() !== "") {
+              aiReply = responseText;
+              successfulRequest = true;
+              break;
+            }
+          } catch (error) {
+            console.error(`Error with API key ${API_KEY}:`, error);
+          }
+        }
+
+        if (!successfulRequest) {
+          aiReply = message; // Keep original message if AI processing fails
+        }
+
+        // Replace user's message with AI response
+        message = aiReply;
+        
+        // Send the AI-modified message as the user's message
+        const newMessageRef = push(messagesRef);
+        await update(newMessageRef, {
+          User: email,
+          Message: message,
+          Date: Date.now(),
+        });
+      } else if (pureMessage.trim().toLowerCase().startsWith("/ai ")) {
         let d = Date.now();
         const question = message.substring(4).trim();
 
@@ -1791,15 +1867,15 @@ Chat Log:
 ${chatHistory}
 
 Here are some instructions on how to respond.
-1. User emails that end with @lakesideschool.org are in the format xxxxy##@lakesideschoool.org, where xxxx is the user’s first name, y is the first letter of the user’s last name, and ## is the last two digits of the user’s graduation year from high school. Address users by their first name.
+1. User emails that end with @lakesideschool.org are in the format xxxxy##@lakesideschoool.org, where xxxx is the user's first name, y is the first letter of the user's last name, and ## is the last two digits of the user's graduation year from high school. Address users by their first name.
 1a. Here are some name preferences you should be aware of: carolynj30@lakesideschool.org (Carolyn J.) prefers to go by Seek. conquerert30_@lakesideschool.org (Conquerer T.) prefers to go by Hengsheng.
-1b. Here are some personal emails you should be aware of. Overall, try to figure out from the personal email what the person’s name is: reva27308@gmail.com is Reva S, aaravd037@gmail.com is Aarav D, alisofudge@gmail.com is Alice F, jarnolds723@gmail.com is Isaac W, purelyillusive@gmail.com is Max L, thescratchercat@gmail.com is Yiyang L, and w.n.lazypanda5050@gmail.com is Winston N.
+1b. Here are some personal emails you should be aware of. Overall, try to figure out from the personal email what the person's name is: reva27308@gmail.com is Reva S, aaravd037@gmail.com is Aarav D, alisofudge@gmail.com is Alice F, jarnolds723@gmail.com is Isaac W, purelyillusive@gmail.com is Max L, thescratchercat@gmail.com is Yiyang L, and w.n.lazypanda5050@gmail.com is Winston N.
 2. Here are some restrictions that you should be aware of.
 2a. Try to stay away from sensitive topics. Tread these carefully and gently remind users about the sensitivity of these topics if a user brings them up. For example, North Korea is a sensitive topic. Be aware of stereotypes (ex. sexism, racism, ageism) and stay away from these as well.
 2b. Try your best to keep your answers fresh. Even if users may end up having similar or even exactly the same questions, keep your answers fresh and do not get stuck in a never-ending loop of the same response.
 2c. Ultimately, try to use your judgement and be careful when responding. Do not do anything that is morally wrong. Use your judgement.
 3. Some more information you should be aware of:
-3a. Everyone’s name preferences are outlined here. Try to respect these.
+3a. Everyone's name preferences are outlined here. Try to respect these.
 3b. No users are related to any other users in a familial or romantic way.
 3c. When a user asks a question, respond to the question only. Do not refer to the chat log without user request. Do not include any response of the history in your message. When referring to the chat log upon request, any messages from "[AI]" are your previous responses.
 
@@ -2062,6 +2138,35 @@ Make sure to follow all the instructions while answering questions.
           Date: Date.now(),
         });
       }
+
+      const snapshot = await get(messagesRef);
+      const messages = snapshot.val() || {};
+
+      const allMessageIds = Object.keys(messages).sort();
+      if (allMessageIds.length > 0) {
+        const latestMessageId = allMessageIds[allMessageIds.length - 1];
+        await markMessagesAsRead(currentChat, latestMessageId);
+      }
+    }
+    document.getElementById("bookmarklet-gui").scrollTop = 0;
+    isSending = false;
+    sendButton.disabled = false;
+  }
+
+  function formatDate(timestamp) {
+    const messageDate = new Date(timestamp);
+    const today = new Date();
+    const diffTime = today - messageDate;
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 0) {
+      return "Today";
+    } else if (diffDays === 1) {
+      return "One day ago";
+    } else {
+      return `${diffDays} days ago`;
+    }
+  }
 
       const snapshot = await get(messagesRef);
       const messages = snapshot.val() || {};
