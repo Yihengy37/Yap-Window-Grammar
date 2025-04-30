@@ -1783,7 +1783,7 @@ dropdownOptions.forEach(option => {
           })
           .join("\n");
 
-        const fullPrompt = `Edit the message "${noFilesMessage}" to give it perfect spelling, grammar, punctuation, etc. UNLESS the message starts with the "/" character, in which case do not change the message. Do not change the meaning of the message. Your response should consist of ONLY the edited message and nothing else. If the message or part of the message is unintelligible, simply don't edit it and respond with the original message.`;
+        const fullPrompt = `Edit the message "${noFilesMessage}" to give it perfect spelling, grammar, punctuation, etc. UNLESS the message starts with the "/" character, in which case do not change the message. Do not change the meaning of the message. Your response should consist of ONLY the edited message and nothing else. If the message or part of the message is unintelligible, simply don't edit it and respond with the original message word for word - you do not need to tell me that you are doing this.`;
 
         let aiReply = null;
         let successfulRequest = false;
