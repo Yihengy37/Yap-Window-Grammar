@@ -1847,12 +1847,9 @@ dropdownOptions.forEach(option => {
         "AIzaSyC1fFINANR_tuOM18Lo3HF9WXosX-6BHLM",
         "AIzaSyAT94ASgr96OQuR9GjVxpS1pee5o5CZ6H0",
       ];
-
       const fullPrompt = `Edit the message "${noFilesMessage}" to give it perfect spelling, grammar, punctuation, etc. UNLESS the message starts with the "/" character, in which case do not change the message. Do not change the meaning of the message. Your response should consist of ONLY the edited message and nothing else. If the message or part of the message is unintelligible, simply don't edit it and respond with the original message word for word - for example, if the user prompted "ijeaseh", your response should be "ijeaseh", not "(No change)", or "I'm not sure what you mean"`;
-
       let aiReply = null;
       let successfulRequest = false;
-
       for (const API_KEY of API_KEYS) {
         try {
           const response = await fetch(
@@ -1866,7 +1863,6 @@ dropdownOptions.forEach(option => {
               }),
             },
           ).then((res) => res.json());
-
           const responseText =
             response.candidates?.[0]?.content?.parts?.[0]?.text;
           if (responseText && responseText.trim() !== "") {
@@ -1878,7 +1874,6 @@ dropdownOptions.forEach(option => {
           console.error(`Error with API key ${API_KEY}:`, error);
         }
       }
-
       if (!successfulRequest) {
         aiReply = message; // Keep original message if AI processing fails
         
@@ -1899,45 +1894,52 @@ dropdownOptions.forEach(option => {
       const originalMessage = message;
       const correctedMessage = aiReply;
       
+      // If AI result is the same as original message, just send the original without prompting
+      if (originalMessage.trim() === correctedMessage.trim()) {
+        // Remove any fake messages that might have been created
+        document.querySelectorAll('.fake-message').forEach(el => el.remove());
+        
+        // Send the original message
+        const newMessageRef = push(messagesRef);
+        await update(newMessageRef, {
+          User: email,
+          Message: originalMessage,
+          Date: Date.now(),
+        });
+        
+        isSending = false;
+        sendButton.disabled = false;
+        return;
+      }
+      
       // Create Jimmy-Bot message with buttons
       const fakeBotMessageDiv = document.createElement('div');
       fakeBotMessageDiv.className = 'message bot jimmy-bot fake-message';
       
-      let botContent = '';
-      if (originalMessage === correctedMessage) {
-        botContent = `<div class="jimmy-bot-header">[Jimmy-Bot]</div><div class="jimmy-bot-content">Your message looks good! No changes needed.</div>`;
-        
-        fakeBotMessageDiv.innerHTML = botContent;
-        messagesDiv.appendChild(fakeBotMessageDiv);
-        
-        // Just send the original message after a short delay
-        setTimeout(async () => {
-          // Remove fake messages
-          document.querySelectorAll('.fake-message').forEach(el => el.remove());
+      // Only show the choice buttons when there's actually a difference
+      const botContent = `
+
+[Jimmy-Bot]
+
+
           
-          // Send the original message
-          const newMessageRef = push(messagesRef);
-          await update(newMessageRef, {
-            User: email,
-            Message: originalMessage,
-            Date: Date.now(),
-          });
+
+Would you like to send this improved version of your message?
+
+
           
-          isSending = false;
-          sendButton.disabled = false;
-          messagesDiv.scrollTop = messagesDiv.scrollHeight;
-        }, 1500);
-        
-        return;
-      } else {
-        botContent = `<div class="jimmy-bot-header">[Jimmy-Bot]</div>
-          <div class="jimmy-bot-content">Would you like to send this improved version of your message?</div>
-          <div class="corrected-message">${correctedMessage}</div>
-          <div class="jimmy-bot-buttons">
-            <button class="jimmy-yes-btn">Yes</button>
-            <button class="jimmy-no-btn">No, send original</button>
-          </div>`;
-      }
+
+${correctedMessage}
+
+
+          
+
+
+            Yes
+            No, send original
+          
+
+`;
       
       fakeBotMessageDiv.innerHTML = botContent;
       messagesDiv.appendChild(fakeBotMessageDiv);
@@ -2001,7 +2003,7 @@ dropdownOptions.forEach(option => {
           sendButton.disabled = false;
           messagesDiv.scrollTop = messagesDiv.scrollHeight;
         }
-      }, 30000);
+      }, 8000);
       
       return; // Exit the function to prevent sending the message immediately
     }
