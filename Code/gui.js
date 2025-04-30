@@ -477,6 +477,62 @@
   background-size: 60px 40px;
 }
 
+.fake-message {
+  /* This class is used to identify messages that should be removed when a decision is made */
+  /* It doesn't change the appearance but helps with targeting */
+}
+
+.jimmy-bot-header {
+  font-weight: bold;
+  margin-bottom: 5px;
+  color: ${isDark ? "#90cdf4" : "#4299e1"};
+}
+
+.jimmy-bot-content {
+  margin-bottom: 8px;
+}
+
+.corrected-message {
+  margin: 8px 0;
+  padding: 8px;
+  border-radius: 4px;
+  background-color: ${isDark ? "#2d3748" : "#e6f7ff"};
+  border-left: 2px solid ${isDark ? "#90cdf4" : "#4299e1"};
+}
+
+.jimmy-bot-buttons {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.jimmy-yes-btn, .jimmy-no-btn {
+  padding: 4px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  border: none;
+  transition: background-color 0.2s;
+}
+
+.jimmy-yes-btn {
+  background-color: ${isDark ? "#38a169" : "#48bb78"};
+  color: white;
+}
+
+.jimmy-no-btn {
+  background-color: ${isDark ? "#e53e3e" : "#f56565"};
+  color: white;
+}
+
+.jimmy-yes-btn:hover {
+  background-color: ${isDark ? "#2f855a" : "#38a169"};
+}
+
+.jimmy-no-btn:hover {
+  background-color: ${isDark ? "#c53030" : "#e53e3e"};
+}
+
 .send-info {
 	font-size: 8px;
 	color: ${isDark ? "#888" : "#666"};
