@@ -1575,6 +1575,48 @@
     };
   }
 
+  const gSettingBtn = document.getElementById('g-setting');
+const gDropdown = document.getElementById('g-dropdown');
+const dropdownOptions = document.querySelectorAll('#g-dropdown .dropdown-option');
+
+// Toggle the dropdown when clicking the button
+gSettingBtn.addEventListener('click', function(e) {
+  e.stopPropagation();
+  const isVisible = gDropdown.style.display === 'block';
+  gDropdown.style.display = isVisible ? 'none' : 'block';
+});
+
+// Hide dropdown when clicking elsewhere on the page
+document.addEventListener('click', function() {
+  gDropdown.style.display = 'none';
+});
+
+// Prevent dropdown from closing when clicking inside it
+gDropdown.addEventListener('click', function(e) {
+  e.stopPropagation();
+});
+
+// Handle option selection
+dropdownOptions.forEach(option => {
+  option.addEventListener('click', function() {
+    // Remove selected class from all options
+    dropdownOptions.forEach(opt => opt.classList.remove('selected'));
+    
+    // Add selected class to clicked option
+    this.classList.add('selected');
+    
+    // Update setting (you can store this value or use it however needed)
+    const selectedValue = this.getAttribute('data-value');
+    console.log('Selected setting:', selectedValue);
+    
+    // Optional: update the button text or icon if desired
+    // gSettingBtn.textContent = '✍️ ' + selectedValue;
+    
+    // Close the dropdown
+    gDropdown.style.display = 'none';
+  });
+});
+
   function setupGlobalFileViewer() {
     if (!window.openFileViewer) {
       window.openFileViewer = function (dataUrl, fileName, mimeType) {
