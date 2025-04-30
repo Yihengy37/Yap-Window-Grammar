@@ -1900,7 +1900,7 @@ dropdownOptions.forEach(option => {
         
         isSending = false;
         sendButton.disabled = false;
-        break;
+        return;
       }
       
       // Store both versions for use with buttons
