@@ -1190,14 +1190,13 @@ a:hover {
       <button id="user-activity" class="setting-button">👥</button>
       <button id="modify-channel" class="setting-button" style="display: none">✏️</button>
       <div class="dropdown-container">
-        <button id="g-setting" class="setting-button">🇬</button>
+        <button id="g-setting" class="setting-button">🄶</button>
         <div id="g-dropdown" class="settings-dropdown">
           <div class="dropdown-option" data-value="on">On</div>
           <div class="dropdown-option" data-value="ask">Ask</div>
           <div class="dropdown-option" data-value="off">Off</div>
         </div>
       </div>
-      <button id="read-all" class="setting-button">📖</button>
    </div>
    <div id="lower-chat" class="chat">
       <div id="left-sidebar">
