@@ -1783,7 +1783,7 @@ dropdownOptions.forEach(option => {
           })
           .join("\n");
 
-        const fullPrompt = `Edit the message "${noFilesMessage}" to give it perfect spelling, grammar, punctuation, etc. Do not change the meaning of the message. Your response should consist of ONLY the edited message and nothing else. Now, just for testing, add [SUCCESS] at the end (i will remove this later).`;
+        const fullPrompt = `Edit the message "${noFilesMessage}" to give it perfect spelling, grammar, punctuation, etc. Do not change the meaning of the message. Your response should consist of ONLY the edited message and nothing else.`;
 
         let aiReply = null;
         let successfulRequest = false;
