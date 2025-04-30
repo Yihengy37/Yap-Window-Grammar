@@ -1889,7 +1889,7 @@ dropdownOptions.forEach(option => {
         aiReply = message; // Keep original message if AI processing fails
       }
 
-      if (aiReply === message) {
+      if (aiReply.trim() == message.trim()) {
         // Send the original message and exit
         const newMessageRef = push(messagesRef);
         await update(newMessageRef, {
