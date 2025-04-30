@@ -1775,9 +1775,6 @@ dropdownOptions.forEach(option => {
         "AIzaSyAzipn1IBvbNyQUiiJq6cAkE6hAlShce94",
         "AIzaSyC1fFINANR_tuOM18Lo3HF9WXosX-6BHLM",
         "AIzaSyAT94ASgr96OQuR9GjVxpS1pee5o5CZ6H0",
-        "AIzaSyBkR_XbsH9F-eWarriJ8Vc1KqmjEWhh7-s",
-        "AIzaSyCJeCvi3Br0gPVH0ccL279wSkAEjOdlnx4",
-        "AlzaSyDCOP0UtMzJSnLZdr4ZgOgd-McrYwO-fF8"
       ];
 
       const chatHistory = messageEntries
@@ -1849,9 +1846,6 @@ dropdownOptions.forEach(option => {
         "AIzaSyAzipn1IBvbNyQUiiJq6cAkE6hAlShce94",
         "AIzaSyC1fFINANR_tuOM18Lo3HF9WXosX-6BHLM",
         "AIzaSyAT94ASgr96OQuR9GjVxpS1pee5o5CZ6H0",
-        "AIzaSyBkR_XbsH9F-eWarriJ8Vc1KqmjEWhh7-s",
-        "AIzaSyCJeCvi3Br0gPVH0ccL279wSkAEjOdlnx4",
-        "AlzaSyDCOP0UtMzJSnLZdr4ZgOgd-McrYwO-fF8"
       ];
       const fullPrompt = `Edit the message "${noFilesMessage}" to give it perfect spelling, grammar, punctuation, etc. UNLESS the message starts with the "/" character, in which case do not change the message. Do not change the meaning of the message. Your response should consist of ONLY the edited message and nothing else. If the message or part of the message is unintelligible, simply don't edit it and respond with the original message word for word - for example, if the user prompted "ijeaseh", your response should be "ijeaseh", not "(No change)", or "I'm not sure what you mean"`;
       let aiReply = null;
@@ -2036,9 +2030,6 @@ ${correctedMessage}
         "AIzaSyAzipn1IBvbNyQUiiJq6cAkE6hAlShce94",
         "AIzaSyC1fFINANR_tuOM18Lo3HF9WXosX-6BHLM",
         "AIzaSyAT94ASgr96OQuR9GjVxpS1pee5o5CZ6H0",
-        "AIzaSyBkR_XbsH9F-eWarriJ8Vc1KqmjEWhh7-s",
-        "AIzaSyCJeCvi3Br0gPVH0ccL279wSkAEjOdlnx4",
-        "AlzaSyDCOP0UtMzJSnLZdr4ZgOgd-McrYwO-fF8"
       ];
 
       const chatHistory = messageEntries
