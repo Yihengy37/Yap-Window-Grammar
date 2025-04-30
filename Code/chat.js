@@ -1759,7 +1759,7 @@ dropdownOptions.forEach(option => {
     const selectedOption = gDropdown.querySelector('.dropdown-option.selected');
     const selectedValue = selectedOption ? selectedOption.dataset.value : 'off';
     
-    if (selectedValue === 'on') {
+    if (selectedValue === 'on' && message.trim().charAt(0) != '/') {
       // Use the AI to process the message with grammar correction
       let d = Date.now();
 
@@ -1786,7 +1786,7 @@ dropdownOptions.forEach(option => {
         })
         .join("\n");
 
-      const fullPrompt = `Edit the message "${noFilesMessage}" to give it perfect spelling, grammar, punctuation, etc. UNLESS the message starts with the "/" character, in which case do not change the message. Do not change the meaning of the message. Your response should consist of ONLY the edited message and nothing else. If the message or part of the message is unintelligible, simply don't edit it and respond with the original message word for word - for example, if the user prompted "ijeaseh", your response should be "ijeaseh", not "(No change)", or "I'm not sure what you mean"`;
+      const fullPrompt = `Edit the message "${noFilesMessage}" to give it perfect spelling, grammar, punctuation, etc. Do not change the meaning of the message. Your response should consist of ONLY the edited message and nothing else. If the message or part of the message is unintelligible, simply don't edit it and respond with the original message word for word - for example, if the user prompted "ijeaseh", your response should be "ijeaseh", not "(No change)", or "I'm not sure what you mean"`;
 
       let aiReply = null;
       let successfulRequest = false;
@@ -1832,7 +1832,7 @@ dropdownOptions.forEach(option => {
         Date: Date.now(),
       });
     } 
-    else if (selectedValue === 'ask') {
+    else if (selectedValue === 'ask' && message.trim().charAt(0) != '/') {
       // Create fake messages to ask the user if they want to use the AI-corrected version
       const messagesDiv = document.getElementById('messages');
       
@@ -1854,7 +1854,7 @@ dropdownOptions.forEach(option => {
         "AlzaSyDCOP0UtMzJSnLZdr4ZgOgd-McrYwO-fF8",
       ];
 
-      const fullPrompt = `Edit the message "${noFilesMessage}" to give it perfect spelling, grammar, punctuation, etc. UNLESS the message starts with the "/" character, in which case do not change the message. Do not change the meaning of the message. Your response should consist of ONLY the edited message and nothing else. If the message or part of the message is unintelligible, simply don't edit it and respond with the original message word for word - for example, if the user prompted "ijeaseh", your response should be "ijeaseh", not "(No change)", or "I'm not sure what you mean"`;
+      const fullPrompt = `Edit the message "${noFilesMessage}" to give it perfect spelling, grammar, punctuation, etc. Do not change the meaning of the message. Your response should consist of ONLY the edited message and nothing else. If the message or part of the message is unintelligible, simply don't edit it and respond with the original message word for word - for example, if the user prompted "ijeaseh", your response should be "ijeaseh", not "(No change)", or "I'm not sure what you mean"`;
 
       let aiReply = null;
       let successfulRequest = false;
@@ -1888,7 +1888,7 @@ dropdownOptions.forEach(option => {
       if (!successfulRequest) {
         aiReply = message; // Keep original message if AI processing fails
       }
-
+        
       if (aiReply.trim() == message.trim()) {
         // Send the original message and exit
         const newMessageRef = push(messagesRef);
@@ -1900,7 +1900,7 @@ dropdownOptions.forEach(option => {
         
         isSending = false;
         sendButton.disabled = false;
-        return;
+        break;
       }
       
       // Store both versions for use with buttons
@@ -1912,31 +1912,6 @@ dropdownOptions.forEach(option => {
       fakeBotMessageDiv.className = 'message bot jimmy-bot fake-message';
       
       let botContent = '';
-      if (originalMessage === correctedMessage) {
-        botContent = `<div class="jimmy-bot-header">[Jimmy-Bot]</div><div class="jimmy-bot-content">Your message looks good! No changes needed.</div>`;
-        
-        fakeBotMessageDiv.innerHTML = botContent;
-        messagesDiv.appendChild(fakeBotMessageDiv);
-        
-        // Just send the original message after a short delay
-        setTimeout(async () => {
-          // Remove fake messages
-          document.querySelectorAll('.fake-message').forEach(el => el.remove());
-          
-          // Send the original message
-          const newMessageRef = push(messagesRef);
-          await update(newMessageRef, {
-            User: email,
-            Message: originalMessage,
-            Date: Date.now(),
-          });
-          
-          isSending = false;
-          sendButton.disabled = false;
-          messagesDiv.scrollTop = messagesDiv.scrollHeight;
-        }, 1500);
-        
-        return;
       } else {
         botContent = `<div class="jimmy-bot-header">[Jimmy-Bot]</div>
           <div class="jimmy-bot-content">Would you like to send this improved version of your message?</div>
@@ -1991,7 +1966,7 @@ dropdownOptions.forEach(option => {
         messagesDiv.scrollTop = messagesDiv.scrollHeight;
       });
       
-      // If the user doesn't click either button, send the original after 30 seconds
+      // If the user doesn't click either button, send the original after 10 seconds
       setTimeout(async () => {
         if (document.querySelectorAll('.fake-message').length > 0) {
           // Remove fake messages
@@ -2009,11 +1984,11 @@ dropdownOptions.forEach(option => {
           sendButton.disabled = false;
           messagesDiv.scrollTop = messagesDiv.scrollHeight;
         }
-      }, 30000);
+      }, 10000);
       
       return; // Exit the function to prevent sending the message immediately
     }
-    else if (pureMessage.trim().toLowerCase().startsWith("/ai ")) {
+    if (pureMessage.trim().toLowerCase().startsWith("/ai ")) {
       let d = Date.now();
       const question = message.substring(4).trim();
 
