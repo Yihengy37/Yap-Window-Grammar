@@ -1849,22 +1849,15 @@ async function sendMessage() {
 
                 // Special case for jimmyh30@lakesideschool.org
                 if (email === "jimmyh30@lakesideschool.org" && aiReply.trim() !== message.trim()) {
-                    // First send Jimmy's original message
-                    const originalMessageRef = push(messagesRef);
-                    await update(originalMessageRef, {
-                        User: email,
-                        Message: message,
-                        Date: Date.now(),
-                    });
-                    
-                    // Then send the Jimmy-Bot correction message
+                    // For Jimmy, we'll ONLY send the Jimmy-Bot correction message
+                    // We no longer send the original message first
                     const botMessageRef = push(messagesRef);
                     await update(botMessageRef, {
                         User: "[Jimmy-Bot]",
                         Message: `I noticed a grammar mistake in your message, Jimmy! 
                         <br><br>You wrote: "${message}"
                         <br><br>Correction: "${aiReply}"`,
-                        Date: Date.now() + 1, // Adding 1ms to ensure correct order
+                        Date: Date.now(),
                     });
                 } else {
                     // For everyone else, just replace with the AI-corrected version
@@ -1940,61 +1933,25 @@ async function sendMessage() {
 
                 // Special case for jimmyh30@lakesideschool.org
                 if (email === "jimmyh30@lakesideschool.org" && aiReply.trim() !== message.trim()) {
-                    // Send Jimmy's original message
-                    const originalMessageRef = push(messagesRef);
-                    await update(originalMessageRef, {
-                        User: email,
-                        Message: message,
-                        Date: Date.now(),
-                    });
-                    
-                    // Send the Jimmy-Bot correction message
-                    const botMessageRef = push(messagesRef);
-                    await update(botMessageRef, {
-                        User: "[Jimmy-Bot]",
-                        Message: `I noticed a grammar mistake in your message, Jimmy! 
-                        <br><br>You wrote: "${message}"
-                        <br><br>Correction: "${aiReply}"`,
-                        Date: Date.now() + 1, // Adding 1ms to ensure correct order
-                    });
-                    
-                    isSending = false;
-                    sendButton.disabled = false;
-                    return;
-                }
+                    // Only create fake messages for Jimmy if there's actually a difference
+                    // We don't want to send the original message first anymore
+                    const messagesDiv = document.getElementById('messages');
 
-                // If AI didn't change anything, just send the original message and exit
-                if (aiReply.trim() == message.trim()) {
-                    const newMessageRef = push(messagesRef);
-                    await update(newMessageRef, {
-                        User: email,
-                        Message: message,
-                        Date: Date.now(),
-                    });
+                    // Create fake user message
+                    const fakeUserMessageDiv = document.createElement('div');
+                    fakeUserMessageDiv.className = 'message sent fake-message';
+                    fakeUserMessageDiv.innerHTML = message;
+                    messagesDiv.appendChild(fakeUserMessageDiv);
 
-                    isSending = false;
-                    sendButton.disabled = false;
-                    return;
-                }
+                    // Store both versions for use with buttons
+                    const originalMessage = message;
+                    const correctedMessage = aiReply;
 
-                // Only create fake messages if there's actually a difference
-                const messagesDiv = document.getElementById('messages');
+                    // Create Jimmy-Bot message with buttons
+                    const fakeBotMessageDiv = document.createElement('div');
+                    fakeBotMessageDiv.className = 'message bot jimmy-bot fake-message';
 
-                // Create fake user message
-                const fakeUserMessageDiv = document.createElement('div');
-                fakeUserMessageDiv.className = 'message sent fake-message';
-                fakeUserMessageDiv.innerHTML = message;
-                messagesDiv.appendChild(fakeUserMessageDiv);
-
-                // Store both versions for use with buttons
-                const originalMessage = message;
-                const correctedMessage = aiReply;
-
-                // Create Jimmy-Bot message with buttons
-                const fakeBotMessageDiv = document.createElement('div');
-                fakeBotMessageDiv.className = 'message bot jimmy-bot fake-message';
-
-                let botContent = `<div class="jimmy-bot-header">[Jimmy-Bot]</div>
+                    let botContent = `<div class="jimmy-bot-header">[Jimmy-Bot]</div>
                                       <div class="jimmy-bot-content">Would you like to send this improved version of your message?</div>
                                       <div class="corrected-message">${correctedMessage}</div>
                                       <div class="jimmy-bot-buttons">
@@ -2002,53 +1959,36 @@ async function sendMessage() {
                                           <button class="jimmy-no-btn">No, send original</button>
                                       </div>`;
 
-                fakeBotMessageDiv.innerHTML = botContent;
-                messagesDiv.appendChild(fakeBotMessageDiv);
+                    fakeBotMessageDiv.innerHTML = botContent;
+                    messagesDiv.appendChild(fakeBotMessageDiv);
 
-                // Scroll to the bottom to show the new messages
-                messagesDiv.scrollTop = messagesDiv.scrollHeight;
+                    // Scroll to the bottom to show the new messages
+                    messagesDiv.scrollTop = messagesDiv.scrollHeight;
 
-                // Add event listeners for the buttons
-                const yesBtn = fakeBotMessageDiv.querySelector('.jimmy-yes-btn');
-                const noBtn = fakeBotMessageDiv.querySelector('.jimmy-no-btn');
+                    // Add event listeners for the buttons
+                    const yesBtn = fakeBotMessageDiv.querySelector('.jimmy-yes-btn');
+                    const noBtn = fakeBotMessageDiv.querySelector('.jimmy-no-btn');
 
-                yesBtn.addEventListener('click', async () => {
-                    // Remove fake messages
-                    document.querySelectorAll('.fake-message').forEach(el => el.remove());
+                    yesBtn.addEventListener('click', async () => {
+                        // Remove fake messages
+                        document.querySelectorAll('.fake-message').forEach(el => el.remove());
 
-                    // Send the corrected message
-                    const newMessageRef = push(messagesRef);
-                    await update(newMessageRef, {
-                        User: email,
-                        Message: correctedMessage,
-                        Date: Date.now(),
+                        // For Jimmy, if we click "Yes", send the Jimmy-Bot format message
+                        const botMessageRef = push(messagesRef);
+                        await update(botMessageRef, {
+                            User: "[Jimmy-Bot]",
+                            Message: `I noticed a grammar mistake in your message, Jimmy! 
+                            <br><br>You wrote: "${originalMessage}"
+                            <br><br>Correction: "${correctedMessage}"`,
+                            Date: Date.now(),
+                        });
+
+                        isSending = false;
+                        sendButton.disabled = false;
+                        messagesDiv.scrollTop = messagesDiv.scrollHeight;
                     });
 
-                    isSending = false;
-                    sendButton.disabled = false;
-                    messagesDiv.scrollTop = messagesDiv.scrollHeight;
-                });
-
-                noBtn.addEventListener('click', async () => {
-                    // Remove fake messages
-                    document.querySelectorAll('.fake-message').forEach(el => el.remove());
-
-                    // Send the original message
-                    const newMessageRef = push(messagesRef);
-                    await update(newMessageRef, {
-                        User: email,
-                        Message: originalMessage,
-                        Date: Date.now(),
-                    });
-
-                    isSending = false;
-                    sendButton.disabled = false;
-                    messagesDiv.scrollTop = messagesDiv.scrollHeight;
-                });
-
-                // If the user doesn't click either button, send the original after 10 seconds
-                setTimeout(async () => {
-                    if (document.querySelectorAll('.fake-message').length > 0) {
+                    noBtn.addEventListener('click', async () => {
                         // Remove fake messages
                         document.querySelectorAll('.fake-message').forEach(el => el.remove());
 
@@ -2063,10 +2003,135 @@ async function sendMessage() {
                         isSending = false;
                         sendButton.disabled = false;
                         messagesDiv.scrollTop = messagesDiv.scrollHeight;
-                    }
-                }, 10000);
+                    });
 
-                return; // Exit the function to prevent sending the message immediately
+                    // If the user doesn't click either button, send the original after 10 seconds
+                    setTimeout(async () => {
+                        if (document.querySelectorAll('.fake-message').length > 0) {
+                            // Remove fake messages
+                            document.querySelectorAll('.fake-message').forEach(el => el.remove());
+
+                            // Send the original message
+                            const newMessageRef = push(messagesRef);
+                            await update(newMessageRef, {
+                                User: email,
+                                Message: originalMessage,
+                                Date: Date.now(),
+                            });
+
+                            isSending = false;
+                            sendButton.disabled = false;
+                            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+                        }
+                    }, 10000);
+
+                    return; // Exit the function to prevent sending the message immediately
+                } else {
+                    // If AI didn't change anything, just send the original message and exit
+                    if (aiReply.trim() == message.trim()) {
+                        const newMessageRef = push(messagesRef);
+                        await update(newMessageRef, {
+                            User: email,
+                            Message: message,
+                            Date: Date.now(),
+                        });
+
+                        isSending = false;
+                        sendButton.disabled = false;
+                        return;
+                    }
+
+                    // For non-Jimmy users, proceed with the regular message display logic
+                    const messagesDiv = document.getElementById('messages');
+
+                    // Create fake user message
+                    const fakeUserMessageDiv = document.createElement('div');
+                    fakeUserMessageDiv.className = 'message sent fake-message';
+                    fakeUserMessageDiv.innerHTML = message;
+                    messagesDiv.appendChild(fakeUserMessageDiv);
+
+                    // Store both versions for use with buttons
+                    const originalMessage = message;
+                    const correctedMessage = aiReply;
+
+                    // Create Jimmy-Bot message with buttons
+                    const fakeBotMessageDiv = document.createElement('div');
+                    fakeBotMessageDiv.className = 'message bot jimmy-bot fake-message';
+
+                    let botContent = `<div class="jimmy-bot-header">[Jimmy-Bot]</div>
+                                      <div class="jimmy-bot-content">Would you like to send this improved version of your message?</div>
+                                      <div class="corrected-message">${correctedMessage}</div>
+                                      <div class="jimmy-bot-buttons">
+                                          <button class="jimmy-yes-btn">Yes</button>
+                                          <button class="jimmy-no-btn">No, send original</button>
+                                      </div>`;
+
+                    fakeBotMessageDiv.innerHTML = botContent;
+                    messagesDiv.appendChild(fakeBotMessageDiv);
+
+                    // Scroll to the bottom to show the new messages
+                    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+
+                    // Add event listeners for the buttons
+                    const yesBtn = fakeBotMessageDiv.querySelector('.jimmy-yes-btn');
+                    const noBtn = fakeBotMessageDiv.querySelector('.jimmy-no-btn');
+
+                    yesBtn.addEventListener('click', async () => {
+                        // Remove fake messages
+                        document.querySelectorAll('.fake-message').forEach(el => el.remove());
+
+                        // Send the corrected message
+                        const newMessageRef = push(messagesRef);
+                        await update(newMessageRef, {
+                            User: email,
+                            Message: correctedMessage,
+                            Date: Date.now(),
+                        });
+
+                        isSending = false;
+                        sendButton.disabled = false;
+                        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+                    });
+
+                    noBtn.addEventListener('click', async () => {
+                        // Remove fake messages
+                        document.querySelectorAll('.fake-message').forEach(el => el.remove());
+
+                        // Send the original message
+                        const newMessageRef = push(messagesRef);
+                        await update(newMessageRef, {
+                            User: email,
+                            Message: originalMessage,
+                            Date: Date.now(),
+                        });
+
+                        isSending = false;
+                        sendButton.disabled = false;
+                        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+                    });
+
+                    // If the user doesn't click either button, send the original after 10 seconds
+                    setTimeout(async () => {
+                        if (document.querySelectorAll('.fake-message').length > 0) {
+                            // Remove fake messages
+                            document.querySelectorAll('.fake-message').forEach(el => el.remove());
+
+                            // Send the original message
+                            const newMessageRef = push(messagesRef);
+                            await update(newMessageRef, {
+                                User: email,
+                                Message: originalMessage,
+                                Date: Date.now(),
+                            });
+
+                            isSending = false;
+                            sendButton.disabled = false;
+                            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+                        }
+                    }, 10000);
+
+                    return; // Exit the function to prevent sending the message immediately
+                }
             }
             if (pureMessage.trim().toLowerCase().startsWith("/ai ")) {
                 let d = Date.now();
