@@ -1907,7 +1907,7 @@ async function sendMessage() {
                     const botMessageRef = push(messagesRef);
                     await update(botMessageRef, {
                         User: "[Jimmy-Bot]",
-                        Message: `I noticed a grammar mistake in your message, Jimmy! 
+                        Message: `🚨🚨 I noticed a grammar mistake in your message, Jimmy! 🚨🚨 
                         <br><br>You wrote: "${message}"
                         <br><br>Correction: "${aiReply}"`,
                         Date: Date.now() + 1,
