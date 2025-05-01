@@ -1589,44 +1589,91 @@
     const gSettingBtn = document.getElementById('g-setting');
     const gDropdown = document.getElementById('g-dropdown');
     const dropdownOptions = document.querySelectorAll('#g-dropdown .dropdown-option');
-
+    
+    // Load saved setting from localStorage or default to "off" if not found
+    function loadSavedSetting() {
+        const savedSetting = localStorage.getItem('g-setting-value') || 'off';
+        
+        // Update the UI to reflect the saved setting
+        dropdownOptions.forEach(option => {
+            if (option.getAttribute('data-value') === savedSetting) {
+                option.classList.add('selected');
+            } else {
+                option.classList.remove('selected');
+            }
+        });
+        
+        // Optional: update the button to indicate current setting
+        // updateSettingButton(savedSetting);
+        
+        console.log('Loaded setting:', savedSetting);
+        return savedSetting;
+    }
+    
+    // Save setting to localStorage
+    function saveSetting(value) {
+        localStorage.setItem('g-setting-value', value);
+        console.log('Saved setting:', value);
+    }
+    
+    // Optional: Update the button appearance based on selected value
+    function updateSettingButton(value) {
+        // You could change the button text or add a visual indicator
+        // For example:
+        // gSettingBtn.innerHTML = `✍️ <span class="setting-indicator">${value}</span>`;
+        
+        // Or add a class to style it differently:
+        gSettingBtn.className = 'setting-button';
+        gSettingBtn.classList.add(`setting-${value}`);
+    }
+    
     // Toggle the dropdown when clicking the button
     gSettingBtn.addEventListener('click', function(e) {
         e.stopPropagation();
         const isVisible = gDropdown.style.display === 'block';
         gDropdown.style.display = isVisible ? 'none' : 'block';
     });
-
+    
     // Hide dropdown when clicking elsewhere on the page
     document.addEventListener('click', function() {
         gDropdown.style.display = 'none';
     });
-
+    
     // Prevent dropdown from closing when clicking inside it
     gDropdown.addEventListener('click', function(e) {
         e.stopPropagation();
     });
-
+    
     // Handle option selection
     dropdownOptions.forEach(option => {
         option.addEventListener('click', function() {
             // Remove selected class from all options
             dropdownOptions.forEach(opt => opt.classList.remove('selected'));
-
+            
             // Add selected class to clicked option
             this.classList.add('selected');
-
-            // Update setting (you can store this value or use it however needed)
+            
+            // Get the selected value
             const selectedValue = this.getAttribute('data-value');
-            console.log('Selected setting:', selectedValue);
-
-            // Optional: update the button text or icon if desired
-            // gSettingBtn.textContent = '✍️ ' + selectedValue;
-
+            
+            // Save to localStorage
+            saveSetting(selectedValue);
+            
+            // Optional: update the button appearance
+            // updateSettingButton(selectedValue);
+            
             // Close the dropdown
             gDropdown.style.display = 'none';
         });
     });
+    
+    // Initialize the setting when the page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        loadSavedSetting();
+    });
+    
+    // Also load the setting immediately in case the script runs after DOMContentLoaded
+    loadSavedSetting();
 
     function setupGlobalFileViewer() {
         if (!window.openFileViewer) {
