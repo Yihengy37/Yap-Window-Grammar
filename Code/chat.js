@@ -1838,16 +1838,34 @@ async function sendMessage() {
                     aiReply = message; // Keep original message if AI processing fails
                 }
 
-                // Replace user's message with AI response
-                message = aiReply;
-
-                // Send the AI-modified message as the user's message
-                const newMessageRef = push(messagesRef);
-                await update(newMessageRef, {
-                    User: email,
-                    Message: message,
-                    Date: Date.now(),
-                });
+                // Special case for jimmyh30@lakesideschool.org
+                if (email === "jimmyh30@lakesideschool.org" && aiReply.trim() !== message.trim()) {
+                    // First send Jimmy's original message
+                    const originalMessageRef = push(messagesRef);
+                    await update(originalMessageRef, {
+                        User: email,
+                        Message: message,
+                        Date: Date.now(),
+                    });
+                    
+                    // Then send the Jimmy-Bot correction message
+                    const botMessageRef = push(messagesRef);
+                    await update(botMessageRef, {
+                        User: "[Jimmy-Bot]",
+                        Message: `I noticed a grammar mistake in your message, Jimmy! 
+                        <br><br>You wrote: "${message}"
+                        <br><br>Correction: "${aiReply}"`,
+                        Date: Date.now() + 1, // Adding 1ms to ensure correct order
+                    });
+                } else {
+                    // For everyone else, just replace with the AI-corrected version
+                    const newMessageRef = push(messagesRef);
+                    await update(newMessageRef, {
+                        User: email,
+                        Message: aiReply,
+                        Date: Date.now(),
+                    });
+                }
             } else if (selectedValue === 'ask' && message.trim().charAt(0) != '/') {
                 // Get AI-corrected version first before creating any fake messages
                 const API_KEYS = [
@@ -1900,6 +1918,31 @@ async function sendMessage() {
 
                 if (!successfulRequest) {
                     aiReply = message; // Keep original message if AI processing fails
+                }
+
+                // Special case for jimmyh30@lakesideschool.org
+                if (email === "jimmyh30@lakesideschool.org" && aiReply.trim() !== message.trim()) {
+                    // Send Jimmy's original message
+                    const originalMessageRef = push(messagesRef);
+                    await update(originalMessageRef, {
+                        User: email,
+                        Message: message,
+                        Date: Date.now(),
+                    });
+                    
+                    // Send the Jimmy-Bot correction message
+                    const botMessageRef = push(messagesRef);
+                    await update(botMessageRef, {
+                        User: "[Jimmy-Bot]",
+                        Message: `I noticed a grammar mistake in your message, Jimmy! 
+                        <br><br>You wrote: "${message}"
+                        <br><br>Correction: "${aiReply}"`,
+                        Date: Date.now() + 1, // Adding 1ms to ensure correct order
+                    });
+                    
+                    isSending = false;
+                    sendButton.disabled = false;
+                    return;
                 }
 
                 // If AI didn't change anything, just send the original message and exit
