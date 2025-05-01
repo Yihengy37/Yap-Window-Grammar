@@ -1691,52 +1691,310 @@
         });
     }
 
-pdate(newMessageRef, {
-                                User: email,
-                                Message: originalMessage,
-                                Date: Date.now(),
-                            });
+async function sendMessage() {
+        if (isSending) return;
+        isSending = true;
+        sendButton.disabled = true;
+        removeFakeHighlights();
+        const messagesRef = ref(database, `Chats/${currentChat}`);
+        let message = document
+            .getElementById("message-input")
+            .innerHTML.substring(0, 5000);
 
-                            isSending = false;
-                            sendButton.disabled = false;
-                            messagesDiv.scrollTop = messagesDiv.scrollHeight;
-                        }
-                    }, 10000);
+        let textContent = document
+            .getElementById("message-input")
+            .textContent.substring(0, 5000);
 
-                    return; // Exit the function to prevent sending the message immediately
-                } else {
-                    // If AI didn't change anything, just send the original message and exit
-                    if (aiReply.trim() == message.trim()) {
-                        const newMessageRef = push(messagesRef);
-                        await update(newMessageRef, {
-                            User: email,
-                            Message: message,
-                            Date: Date.now(),
-                        });
+        if (!textContent.trim() && attachments.length === 0) {
+            isSending = false;
+            sendButton.disabled = false;
+            return;
+        }
 
-                        isSending = false;
-                        sendButton.disabled = false;
-                        return;
+        let pureMessage = document
+            .getElementById("message-input")
+            .textContent.substring(0, 2500);
+
+        noFilesMessage = message;
+
+        attachments.forEach((att, index) => {
+            if (!att.file) return;
+            if (att.type === "image") {
+                message += `<br><img src="${att.file}" style="max-width:150px;max-height:150px;border-radius:5px;margin:5px 0;">`;
+            } else if (att.type === "file") {
+                const linkId = `attachment-link-${Date.now()}-${index}`;
+                const safeName = att.name?.replace(/"/g, "&quot;") || "file";
+
+                message += `<br><a href="javascript:void(0)" class="file-attachment" data-file="${encodeURIComponent(att.file)}" data-filename="${encodeURIComponent(safeName)}" data-mime="${encodeURIComponent(att.file.split(",")[0].split(":")[1].split(";")[0])}"
+    style="text-decoration:underline;color:${isDark ? "#66b2ff" : "#007bff"};">📎 ${safeName}</a>`;
+            }
+        });
+        message = joypixels.shortnameToImage(message);
+        const div = document.createElement("div");
+        div.innerHTML = message;
+
+        function processNode(node) {
+            if (node.nodeType === 3) {
+                if (node.parentNode.tagName !== "A") {
+                    const fragment = document.createDocumentFragment();
+                    const tempDiv = document.createElement("div");
+                    tempDiv.innerHTML = autoDetectLinks(node.textContent);
+
+                    while (tempDiv.firstChild) {
+                        fragment.appendChild(tempDiv.firstChild);
                     }
 
-                    // For non-Jimmy users, proceed with the regular message display logic
-                    const messagesDiv = document.getElementById('messages');
+                    node.parentNode.replaceChild(fragment, node);
+                }
+            } else if (node.nodeType === 1) {
+                Array.from(node.childNodes).forEach((child) => {
+                    processNode(child);
+                });
+            }
+        }
 
-                    // Create fake user message
-                    const fakeUserMessageDiv = document.createElement('div');
-                    fakeUserMessageDiv.className = 'message sent fake-message';
-                    fakeUserMessageDiv.innerHTML = message;
-                    messagesDiv.appendChild(fakeUserMessageDiv);
+        Array.from(div.childNodes).forEach((node) => {
+            processNode(node);
+        });
 
-                    // Store both versions for use with buttons
-                    const originalMessage = message;
-                    const correctedMessage = aiReply;
+        message = div.innerHTML;
 
-                    // Create Jimmy-Bot message with buttons
-                    const fakeBotMessageDiv = document.createElement('div');
-                    fakeBotMessageDiv.className = 'message bot jimmy-bot fake-message';
+        resetMessageInput();
+        hideAllColorGrids();
+        clearAttachments();
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
 
-                    let botContent = `<div class="jimmy-bot-header">[Jimmy-Bot]</div>
+        if (message) {
+            // Check which option is selected in the dropdown
+            const gDropdown = document.getElementById('g-dropdown');
+            const selectedOption = gDropdown.querySelector('.dropdown-option.selected');
+            const selectedValue = selectedOption ? selectedOption.dataset.value : 'off';
+
+            if (selectedValue === 'on' && message.trim().charAt(0) != '/') {
+                // Use the AI to process the message with grammar correction
+                let d = Date.now();
+
+                const messagesSnapshot = await get(messagesRef);
+                const messages = messagesSnapshot.val() || {};
+                const messageEntries = Object.entries(messages)
+                    .sort((a, b) => new Date(a[1].Date) - new Date(b[1].Date))
+                    .slice(-20);
+
+                const API_KEYS = [
+                    "AIzaSyDJEIVUqeVkrbtMPnBvB8QWd9VuUQQQBjg",
+                    "AIzaSyB42CD-hXRnfq3eNpLWnF9at5kHePI5qgQ",
+                    "AIzaSyAzipn1IBvbNyQUiiJq6cAkE6hAlShce94",
+                    "AIzaSyC1fFINANR_tuOM18Lo3HF9WXosX-6BHLM",
+                    "AIzaSyAT94ASgr96OQuR9GjVxpS1pee5o5CZ6H0",
+                    "AIzaSyBkR_XbsH9F-eWarriJ8Vc1KqmjEWhh7-s",
+                    "AIzaSyCJeCvi3Br0gPVH0ccL279wSkAEjOdlnx4",
+                    "AlzaSyDCOP0UtMzJSnLZdr4ZgOgd-McrYwO-fF8",
+                ];
+
+                const chatHistory = messageEntries
+                    .map(([id, msg]) => {
+                        return `${msg.User}: ${msg.Message.substring(0, 500)}`;
+                    })
+                    .join("\n");
+
+                // Different prompt for Jimmy vs. other users
+                let fullPrompt;
+                
+                if (email === "jimmyh30@lakesideschool.org") {
+                    // Jimmy's special prompt - without the "keep unintelligible text" instruction
+                    fullPrompt = `Edit the message "${noFilesMessage}" to give it perfect spelling, grammar, punctuation, etc. Do not change the meaning of the message. Your response should consist of ONLY the edited message and nothing else.`;
+                } else {
+                    // Regular prompt for all other users
+                    fullPrompt = `Edit the message "${noFilesMessage}" to give it perfect spelling, grammar, punctuation, etc. Do not change the meaning of the message. Your response should consist of ONLY the edited message and nothing else. If the message or part of the message is unintelligible, simply don't edit it and respond with the original message word for word - for example, if the user prompted "ijeaseh", your response should be "ijeaseh", not "(No change)", or "I'm not sure what you mean"`;
+                }
+
+                let aiReply = null;
+                let successfulRequest = false;
+
+                for (const API_KEY of API_KEYS) {
+                    try {
+                        const response = await fetch(
+                            "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=" +
+                            API_KEY, {
+                                method: "POST",
+                                headers: {
+                                    "Content-Type": "application/json"
+                                },
+                                body: JSON.stringify({
+                                    contents: [{
+                                        role: "user",
+                                        parts: [{
+                                            text: fullPrompt
+                                        }]
+                                    }],
+                                }),
+                            },
+                        ).then((res) => res.json());
+
+                        const responseText =
+                            response.candidates?.[0]?.content?.parts?.[0]?.text;
+                        if (responseText && responseText.trim() !== "") {
+                            aiReply = responseText;
+                            successfulRequest = true;
+                            break;
+                        }
+                    } catch (error) {
+                        console.error(`Error with API key ${API_KEY}:`, error);
+                    }
+                }
+
+                if (!successfulRequest) {
+                    aiReply = message; // Keep original message if AI processing fails
+                }
+
+                // Special case for jimmyh30@lakesideschool.org
+                if (email === "jimmyh30@lakesideschool.org" && aiReply.trim() !== message.trim()) {
+                    // First send Jimmy's original message
+                    const originalMessageRef = push(messagesRef);
+                    await update(originalMessageRef, {
+                        User: email,
+                        Message: message,
+                        Date: Date.now(),
+                    });
+                    
+                    // Then send the Jimmy-Bot correction message
+                    const botMessageRef = push(messagesRef);
+                    await update(botMessageRef, {
+                        User: "[Jimmy-Bot]",
+                        Message: `I noticed a grammar mistake in your message, Jimmy! 
+                        <br><br>You wrote: "${message}"
+                        <br><br>Correction: "${aiReply}"`,
+                        Date: Date.now() + 1, // Adding 1ms to ensure correct order
+                    });
+                } else {
+                    // For everyone else, just replace with the AI-corrected version
+                    const newMessageRef = push(messagesRef);
+                    await update(newMessageRef, {
+                        User: email,
+                        Message: aiReply,
+                        Date: Date.now(),
+                    });
+                }
+            } else if (selectedValue === 'ask' && message.trim().charAt(0) != '/') {
+                // Get AI-corrected version first before creating any fake messages
+                const API_KEYS = [
+                    "AIzaSyDJEIVUqeVkrbtMPnBvB8QWd9VuUQQQBjg",
+                    "AIzaSyB42CD-hXRnfq3eNpLWnF9at5kHePI5qgQ",
+                    "AIzaSyAzipn1IBvbNyQUiiJq6cAkE6hAlShce94",
+                    "AIzaSyC1fFINANR_tuOM18Lo3HF9WXosX-6BHLM",
+                    "AIzaSyAT94ASgr96OQuR9GjVxpS1pee5o5CZ6H0",
+                    "AIzaSyBkR_XbsH9F-eWarriJ8Vc1KqmjEWhh7-s",
+                    "AIzaSyCJeCvi3Br0gPVH0ccL279wSkAEjOdlnx4",
+                    "AlzaSyDCOP0UtMzJSnLZdr4ZgOgd-McrYwO-fF8",
+                ];
+
+                // Different prompt for Jimmy vs. other users
+                let fullPrompt;
+                
+                if (email === "jimmyh30@lakesideschool.org") {
+                    // Jimmy's special prompt - without the "keep unintelligible text" instruction
+                    fullPrompt = `Edit the message "${noFilesMessage}" to give it perfect spelling, grammar, punctuation, etc. Do not change the meaning of the message. Your response should consist of ONLY the edited message and nothing else.`;
+                } else {
+                    // Regular prompt for all other users
+                    fullPrompt = `Edit the message "${noFilesMessage}" to give it perfect spelling, grammar, punctuation, etc. Do not change the meaning of the message. Your response should consist of ONLY the edited message and nothing else. If the message or part of the message is unintelligible, simply don't edit it and respond with the original message word for word - for example, if the user prompted "ijeaseh", your response should be "ijeaseh", not "(No change)", or "I'm not sure what you mean"`;
+                }
+
+                let aiReply = null;
+                let successfulRequest = false;
+
+                for (const API_KEY of API_KEYS) {
+                    try {
+                        const response = await fetch(
+                            "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=" +
+                            API_KEY, {
+                                method: "POST",
+                                headers: {
+                                    "Content-Type": "application/json"
+                                },
+                                body: JSON.stringify({
+                                    contents: [{
+                                        role: "user",
+                                        parts: [{
+                                            text: fullPrompt
+                                        }]
+                                    }],
+                                }),
+                            },
+                        ).then((res) => res.json());
+
+                        const responseText =
+                            response.candidates?.[0]?.content?.parts?.[0]?.text;
+                        if (responseText && responseText.trim() !== "") {
+                            aiReply = responseText;
+                            successfulRequest = true;
+                            break;
+                        }
+                    } catch (error) {
+                        console.error(`Error with API key ${API_KEY}:`, error);
+                    }
+                }
+
+                if (!successfulRequest) {
+                    aiReply = message; // Keep original message if AI processing fails
+                }
+
+                // Special case for jimmyh30@lakesideschool.org
+                if (email === "jimmyh30@lakesideschool.org" && aiReply.trim() !== message.trim()) {
+                    // Send Jimmy's original message
+                    const originalMessageRef = push(messagesRef);
+                    await update(originalMessageRef, {
+                        User: email,
+                        Message: message,
+                        Date: Date.now(),
+                    });
+                    
+                    // Send the Jimmy-Bot correction message
+                    const botMessageRef = push(messagesRef);
+                    await update(botMessageRef, {
+                        User: "[Jimmy-Bot]",
+                        Message: `I noticed a grammar mistake in your message, Jimmy! 
+                        <br><br>You wrote: "${message}"
+                        <br><br>Correction: "${aiReply}"`,
+                        Date: Date.now() + 1, // Adding 1ms to ensure correct order
+                    });
+                    
+                    isSending = false;
+                    sendButton.disabled = false;
+                    return;
+                }
+
+                // If AI didn't change anything, just send the original message and exit
+                if (aiReply.trim() == message.trim()) {
+                    const newMessageRef = push(messagesRef);
+                    await update(newMessageRef, {
+                        User: email,
+                        Message: message,
+                        Date: Date.now(),
+                    });
+
+                    isSending = false;
+                    sendButton.disabled = false;
+                    return;
+                }
+
+                // Only create fake messages if there's actually a difference
+                const messagesDiv = document.getElementById('messages');
+
+                // Create fake user message
+                const fakeUserMessageDiv = document.createElement('div');
+                fakeUserMessageDiv.className = 'message sent fake-message';
+                fakeUserMessageDiv.innerHTML = message;
+                messagesDiv.appendChild(fakeUserMessageDiv);
+
+                // Store both versions for use with buttons
+                const originalMessage = message;
+                const correctedMessage = aiReply;
+
+                // Create Jimmy-Bot message with buttons
+                const fakeBotMessageDiv = document.createElement('div');
+                fakeBotMessageDiv.className = 'message bot jimmy-bot fake-message';
+
+                let botContent = `<div class="jimmy-bot-header">[Jimmy-Bot]</div>
                                       <div class="jimmy-bot-content">Would you like to send this improved version of your message?</div>
                                       <div class="corrected-message">${correctedMessage}</div>
                                       <div class="jimmy-bot-buttons">
@@ -1744,34 +2002,53 @@ pdate(newMessageRef, {
                                           <button class="jimmy-no-btn">No, send original</button>
                                       </div>`;
 
-                    fakeBotMessageDiv.innerHTML = botContent;
-                    messagesDiv.appendChild(fakeBotMessageDiv);
+                fakeBotMessageDiv.innerHTML = botContent;
+                messagesDiv.appendChild(fakeBotMessageDiv);
 
-                    // Scroll to the bottom to show the new messages
-                    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+                // Scroll to the bottom to show the new messages
+                messagesDiv.scrollTop = messagesDiv.scrollHeight;
 
-                    // Add event listeners for the buttons
-                    const yesBtn = fakeBotMessageDiv.querySelector('.jimmy-yes-btn');
-                    const noBtn = fakeBotMessageDiv.querySelector('.jimmy-no-btn');
+                // Add event listeners for the buttons
+                const yesBtn = fakeBotMessageDiv.querySelector('.jimmy-yes-btn');
+                const noBtn = fakeBotMessageDiv.querySelector('.jimmy-no-btn');
 
-                    yesBtn.addEventListener('click', async () => {
-                        // Remove fake messages
-                        document.querySelectorAll('.fake-message').forEach(el => el.remove());
+                yesBtn.addEventListener('click', async () => {
+                    // Remove fake messages
+                    document.querySelectorAll('.fake-message').forEach(el => el.remove());
 
-                        // Send the corrected message
-                        const newMessageRef = push(messagesRef);
-                        await update(newMessageRef, {
-                            User: email,
-                            Message: correctedMessage,
-                            Date: Date.now(),
-                        });
-
-                        isSending = false;
-                        sendButton.disabled = false;
-                        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+                    // Send the corrected message
+                    const newMessageRef = push(messagesRef);
+                    await update(newMessageRef, {
+                        User: email,
+                        Message: correctedMessage,
+                        Date: Date.now(),
                     });
 
-                    noBtn.addEventListener('click', async () => {
+                    isSending = false;
+                    sendButton.disabled = false;
+                    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+                });
+
+                noBtn.addEventListener('click', async () => {
+                    // Remove fake messages
+                    document.querySelectorAll('.fake-message').forEach(el => el.remove());
+
+                    // Send the original message
+                    const newMessageRef = push(messagesRef);
+                    await update(newMessageRef, {
+                        User: email,
+                        Message: originalMessage,
+                        Date: Date.now(),
+                    });
+
+                    isSending = false;
+                    sendButton.disabled = false;
+                    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+                });
+
+                // If the user doesn't click either button, send the original after 10 seconds
+                setTimeout(async () => {
+                    if (document.querySelectorAll('.fake-message').length > 0) {
                         // Remove fake messages
                         document.querySelectorAll('.fake-message').forEach(el => el.remove());
 
@@ -1786,30 +2063,10 @@ pdate(newMessageRef, {
                         isSending = false;
                         sendButton.disabled = false;
                         messagesDiv.scrollTop = messagesDiv.scrollHeight;
-                    });
+                    }
+                }, 10000);
 
-                    // If the user doesn't click either button, send the original after 10 seconds
-                    setTimeout(async () => {
-                        if (document.querySelectorAll('.fake-message').length > 0) {
-                            // Remove fake messages
-                            document.querySelectorAll('.fake-message').forEach(el => el.remove());
-
-                            // Send the original message
-                            const newMessageRef = push(messagesRef);
-                            await update(newMessageRef, {
-                                User: email,
-                                Message: originalMessage,
-                                Date: Date.now(),
-                            });
-
-                            isSending = false;
-                            sendButton.disabled = false;
-                            messagesDiv.scrollTop = messagesDiv.scrollHeight;
-                        }
-                    }, 10000);
-
-                    return; // Exit the function to prevent sending the message immediately
-                }
+                return; // Exit the function to prevent sending the message immediately
             }
             if (pureMessage.trim().toLowerCase().startsWith("/ai ")) {
                 let d = Date.now();
