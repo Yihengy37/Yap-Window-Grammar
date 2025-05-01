@@ -1800,7 +1800,7 @@ async function sendMessage() {
                 // Different prompt for Jimmy vs. other users
                 let fullPrompt;
                 
-                if (email === "yihengy30@lakesideschool.org") {
+                if (email === "jimmyh30@lakesideschool.org") {
                     // Jimmy's special prompt - without the "keep unintelligible text" instruction
                     fullPrompt = `Edit the message "${noFilesMessage}" to give it perfect spelling, grammar, punctuation, etc. Do not change the meaning of the message. Your response should consist of ONLY the edited message and nothing else.`;
                 } else {
@@ -1854,8 +1854,8 @@ async function sendMessage() {
                     Date: Date.now(),
                 });
                 
-                // Special case for yihengy30@lakesideschool.org
-                if (email === "yihengy30@lakesideschool.org" && aiReply.trim() !== message.trim()) {
+                // Special case for jimmyh30@lakesideschool.org
+                if (email === "jimmyh30@lakesideschool.org" && aiReply.trim() !== message.trim()) {
                     // For Jimmy, we'll ONLY send the Jimmy-Bot correction message
                     const botMessageRef = push(messagesRef);
                     await update(botMessageRef, {
@@ -1882,7 +1882,7 @@ async function sendMessage() {
                 // Different prompt for Jimmy vs. other users
                 let fullPrompt;
                 
-                if (email === "yihengy30@lakesideschool.org") {
+                if (email === "jimmyh30@lakesideschool.org") {
                     // Jimmy's special prompt - without the "keep unintelligible text" instruction
                     fullPrompt = `Edit the message "${noFilesMessage}" to give it perfect spelling, grammar, punctuation, etc. Do not change the meaning of the message. Your response should consist of ONLY the edited message and nothing else.`;
                 } else {
@@ -1929,8 +1929,8 @@ async function sendMessage() {
                     aiReply = message; // Keep original message if AI processing fails
                 }
 
-                // Special case for yihengy30@lakesideschool.org
-                if (email === "yihengy30@lakesideschool.org" && aiReply.trim() !== message.trim()) {
+                // Special case for jimmyh30@lakesideschool.org
+                if (email === "jimmyh30@lakesideschool.org" && aiReply.trim() !== message.trim()) {
                     // Only create fake messages for Jimmy if there's actually a difference
                     // We don't want to send the original message first anymore
                     const messagesDiv = document.getElementById('messages');
