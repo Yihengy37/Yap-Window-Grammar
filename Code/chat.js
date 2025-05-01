@@ -1857,14 +1857,13 @@ async function sendMessage() {
                 // Special case for yihengy30@lakesideschool.org
                 if (email === "yihengy30@lakesideschool.org" && aiReply.trim() !== message.trim()) {
                     // For Jimmy, we'll ONLY send the Jimmy-Bot correction message
-                    // We no longer send the original message first
                     const botMessageRef = push(messagesRef);
                     await update(botMessageRef, {
                         User: "[Jimmy-Bot]",
                         Message: `I noticed a grammar mistake in your message, Jimmy! 
                         <br><br>You wrote: "${message}"
                         <br><br>Correction: "${aiReply}"`,
-                        Date: Date.now(),
+                        Date: Date.now() + 1,
                     });
                 }
             } else if (selectedValue === 'ask' && message.trim().charAt(0) != '/') {
@@ -1967,21 +1966,14 @@ async function sendMessage() {
                     // Add event listeners for the buttons
                     const yesBtn = fakeBotMessageDiv.querySelector('.jimmy-yes-btn');
                     const noBtn = fakeBotMessageDiv.querySelector('.jimmy-no-btn');
-
+                    let finalMessage;
+                    
                     yesBtn.addEventListener('click', async () => {
                         // Remove fake messages
                         document.querySelectorAll('.fake-message').forEach(el => el.remove());
 
-                        // For Jimmy, if we click "Yes", send the Jimmy-Bot format message
-                        const botMessageRef = push(messagesRef);
-                        await update(botMessageRef, {
-                            User: "[Jimmy-Bot]",
-                            Message: `I noticed a grammar mistake in your message, Jimmy! 
-                            <br><br>You wrote: "${originalMessage}"
-                            <br><br>Correction: "${correctedMessage}"`,
-                            Date: Date.now(),
-                        });
-
+                        finalMessage = correctedMessage;
+                        
                         isSending = false;
                         sendButton.disabled = false;
                         messagesDiv.scrollTop = messagesDiv.scrollHeight;
@@ -1991,14 +1983,8 @@ async function sendMessage() {
                         // Remove fake messages
                         document.querySelectorAll('.fake-message').forEach(el => el.remove());
 
-                        // Send the original message
-                        const newMessageRef = push(messagesRef);
-                        await update(newMessageRef, {
-                            User: email,
-                            Message: originalMessage,
-                            Date: Date.now(),
-                        });
-
+                        finalMessage = originalMessage;
+                        
                         isSending = false;
                         sendButton.disabled = false;
                         messagesDiv.scrollTop = messagesDiv.scrollHeight;
@@ -2009,20 +1995,30 @@ async function sendMessage() {
                         if (document.querySelectorAll('.fake-message').length > 0) {
                             // Remove fake messages
                             document.querySelectorAll('.fake-message').forEach(el => el.remove());
-
-                            // Send the original message
-                            const newMessageRef = push(messagesRef);
-                            await update(newMessageRef, {
-                                User: email,
-                                Message: originalMessage,
-                                Date: Date.now(),
-                            });
+                            
+                            finalMessage = originalMessage;
 
                             isSending = false;
                             sendButton.disabled = false;
                             messagesDiv.scrollTop = messagesDiv.scrollHeight;
                         }
                     }, 10000);
+
+                    const newMessageRef = push(messagesRef);
+                    await update(newMessageRef, {
+                        User: email,
+                        Message: finalMessage,
+                        Date: Date.now(),
+                    });
+                                            
+                    const botMessageRef = push(messagesRef);
+                    await update(botMessageRef, {
+                        User: "[Jimmy-Bot]",
+                        Message: `I noticed a grammar mistake in your message, Jimmy! 
+                        <br><br>You wrote: "${originalMessage}"
+                        <br><br>Correction: "${correctedMessage}"`,
+                        Date: Date.now() + 1,
+                    });
 
                     return; // Exit the function to prevent sending the message immediately
                 } else {
