@@ -2133,7 +2133,7 @@ async function sendMessage() {
                     return; // Exit the function to prevent sending the message immediately
                 }
             }
-            if (pureMessage.trim().toLowerCase().startsWith("/ai ")) {
+            else if (pureMessage.trim().toLowerCase().startsWith("/ai ")) {
                 let d = Date.now();
                 const question = message.substring(4).trim();
 
