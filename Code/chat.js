@@ -1691,7 +1691,7 @@
         });
     }
 
-    async function sendMessage() {
+async function sendMessage() {
         if (isSending) return;
         isSending = true;
         sendButton.disabled = true;
@@ -1849,16 +1849,7 @@
                     Date: Date.now(),
                 });
             } else if (selectedValue === 'ask' && message.trim().charAt(0) != '/') {
-                // Create fake messages to ask the user if they want to use the AI-corrected version
-                const messagesDiv = document.getElementById('messages');
-
-                // Create fake user message
-                const fakeUserMessageDiv = document.createElement('div');
-                fakeUserMessageDiv.className = 'message sent fake-message';
-                fakeUserMessageDiv.innerHTML = message;
-                messagesDiv.appendChild(fakeUserMessageDiv);
-
-                // Get AI-corrected version
+                // Get AI-corrected version first before creating any fake messages
                 const API_KEYS = [
                     "AIzaSyDJEIVUqeVkrbtMPnBvB8QWd9VuUQQQBjg",
                     "AIzaSyB42CD-hXRnfq3eNpLWnF9at5kHePI5qgQ",
@@ -1911,8 +1902,8 @@
                     aiReply = message; // Keep original message if AI processing fails
                 }
 
+                // If AI didn't change anything, just send the original message and exit
                 if (aiReply.trim() == message.trim()) {
-                    // Send the original message and exit
                     const newMessageRef = push(messagesRef);
                     await update(newMessageRef, {
                         User: email,
@@ -1924,6 +1915,15 @@
                     sendButton.disabled = false;
                     return;
                 }
+
+                // Only create fake messages if there's actually a difference
+                const messagesDiv = document.getElementById('messages');
+
+                // Create fake user message
+                const fakeUserMessageDiv = document.createElement('div');
+                fakeUserMessageDiv.className = 'message sent fake-message';
+                fakeUserMessageDiv.innerHTML = message;
+                messagesDiv.appendChild(fakeUserMessageDiv);
 
                 // Store both versions for use with buttons
                 const originalMessage = message;
