@@ -1797,7 +1797,16 @@ async function sendMessage() {
                     })
                     .join("\n");
 
-                const fullPrompt = `Edit the message "${noFilesMessage}" to give it perfect spelling, grammar, punctuation, etc. Do not change the meaning of the message. Your response should consist of ONLY the edited message and nothing else. If the message or part of the message is unintelligible, simply don't edit it and respond with the original message word for word - for example, if the user prompted "ijeaseh", your response should be "ijeaseh", not "(No change)", or "I'm not sure what you mean"`;
+                // Different prompt for Jimmy vs. other users
+                let fullPrompt;
+                
+                if (email === "jimmyh30@lakesideschool.org") {
+                    // Jimmy's special prompt - without the "keep unintelligible text" instruction
+                    fullPrompt = `Edit the message "${noFilesMessage}" to give it perfect spelling, grammar, punctuation, etc. Do not change the meaning of the message. Your response should consist of ONLY the edited message and nothing else.`;
+                } else {
+                    // Regular prompt for all other users
+                    fullPrompt = `Edit the message "${noFilesMessage}" to give it perfect spelling, grammar, punctuation, etc. Do not change the meaning of the message. Your response should consist of ONLY the edited message and nothing else. If the message or part of the message is unintelligible, simply don't edit it and respond with the original message word for word - for example, if the user prompted "ijeaseh", your response should be "ijeaseh", not "(No change)", or "I'm not sure what you mean"`;
+                }
 
                 let aiReply = null;
                 let successfulRequest = false;
@@ -1879,7 +1888,16 @@ async function sendMessage() {
                     "AlzaSyDCOP0UtMzJSnLZdr4ZgOgd-McrYwO-fF8",
                 ];
 
-                const fullPrompt = `Edit the message "${noFilesMessage}" to give it perfect spelling, grammar, punctuation, etc. Do not change the meaning of the message. Your response should consist of ONLY the edited message and nothing else. If the message or part of the message is unintelligible, simply don't edit it and respond with the original message word for word - for example, if the user prompted "ijeaseh", your response should be "ijeaseh", not "(No change)", or "I'm not sure what you mean"`;
+                // Different prompt for Jimmy vs. other users
+                let fullPrompt;
+                
+                if (email === "jimmyh30@lakesideschool.org") {
+                    // Jimmy's special prompt - without the "keep unintelligible text" instruction
+                    fullPrompt = `Edit the message "${noFilesMessage}" to give it perfect spelling, grammar, punctuation, etc. Do not change the meaning of the message. Your response should consist of ONLY the edited message and nothing else.`;
+                } else {
+                    // Regular prompt for all other users
+                    fullPrompt = `Edit the message "${noFilesMessage}" to give it perfect spelling, grammar, punctuation, etc. Do not change the meaning of the message. Your response should consist of ONLY the edited message and nothing else. If the message or part of the message is unintelligible, simply don't edit it and respond with the original message word for word - for example, if the user prompted "ijeaseh", your response should be "ijeaseh", not "(No change)", or "I'm not sure what you mean"`;
+                }
 
                 let aiReply = null;
                 let successfulRequest = false;
