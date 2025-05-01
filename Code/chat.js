@@ -1847,6 +1847,13 @@ async function sendMessage() {
                     aiReply = message; // Keep original message if AI processing fails
                 }
 
+                const newMessageRef = push(messagesRef);
+                await update(newMessageRef, {
+                    User: email,
+                    Message: aiReply,
+                    Date: Date.now(),
+                });
+                
                 // Special case for yihengy30@lakesideschool.org
                 if (email === "yihengy30@lakesideschool.org" && aiReply.trim() !== message.trim()) {
                     // For Jimmy, we'll ONLY send the Jimmy-Bot correction message
@@ -1857,14 +1864,6 @@ async function sendMessage() {
                         Message: `I noticed a grammar mistake in your message, Jimmy! 
                         <br><br>You wrote: "${message}"
                         <br><br>Correction: "${aiReply}"`,
-                        Date: Date.now(),
-                    });
-                } else {
-                    // For everyone else, just replace with the AI-corrected version
-                    const newMessageRef = push(messagesRef);
-                    await update(newMessageRef, {
-                        User: email,
-                        Message: aiReply,
                         Date: Date.now(),
                     });
                 }
