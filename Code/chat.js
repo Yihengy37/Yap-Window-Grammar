@@ -1972,7 +1972,21 @@ async function sendMessage() {
                         // Remove fake messages
                         document.querySelectorAll('.fake-message').forEach(el => el.remove());
 
-                        finalMessage = correctedMessage;
+                        const newMessageRef = push(messagesRef);
+                        await update(newMessageRef, {
+                            User: email,
+                            Message: correctedMessage,
+                            Date: Date.now(),
+                        });
+                                                
+                        const botMessageRef = push(messagesRef);
+                        await update(botMessageRef, {
+                            User: "[Jimmy-Bot]",
+                            Message: `I noticed a grammar mistake in your message, Jimmy! 
+                            <br><br>You wrote: "${originalMessage}"
+                            <br><br>Correction: "${correctedMessage}"`,
+                            Date: Date.now() + 1,
+                        });   
                         
                         isSending = false;
                         sendButton.disabled = false;
@@ -1983,7 +1997,21 @@ async function sendMessage() {
                         // Remove fake messages
                         document.querySelectorAll('.fake-message').forEach(el => el.remove());
 
-                        finalMessage = originalMessage;
+                        const newMessageRef = push(messagesRef);
+                        await update(newMessageRef, {
+                            User: email,
+                            Message: originalMessage,
+                            Date: Date.now(),
+                        });
+                                                
+                        const botMessageRef = push(messagesRef);
+                        await update(botMessageRef, {
+                            User: "[Jimmy-Bot]",
+                            Message: `I noticed a grammar mistake in your message, Jimmy! 
+                            <br><br>You wrote: "${originalMessage}"
+                            <br><br>Correction: "${correctedMessage}"`,
+                            Date: Date.now() + 1,
+                        });
                         
                         isSending = false;
                         sendButton.disabled = false;
@@ -1996,29 +2024,27 @@ async function sendMessage() {
                             // Remove fake messages
                             document.querySelectorAll('.fake-message').forEach(el => el.remove());
                             
-                            finalMessage = originalMessage;
-
+                            const newMessageRef = push(messagesRef);
+                            await update(newMessageRef, {
+                                User: email,
+                                Message: originalMessage,
+                                Date: Date.now(),
+                            });
+                                                    
+                            const botMessageRef = push(messagesRef);
+                            await update(botMessageRef, {
+                                User: "[Jimmy-Bot]",
+                                Message: `I noticed a grammar mistake in your message, Jimmy! 
+                                <br><br>You wrote: "${originalMessage}"
+                                <br><br>Correction: "${correctedMessage}"`,
+                                Date: Date.now() + 1,
+                            });
+                            
                             isSending = false;
                             sendButton.disabled = false;
                             messagesDiv.scrollTop = messagesDiv.scrollHeight;
                         }
                     }, 10000);
-
-                    const newMessageRef = push(messagesRef);
-                    await update(newMessageRef, {
-                        User: email,
-                        Message: finalMessage,
-                        Date: Date.now(),
-                    });
-                                            
-                    const botMessageRef = push(messagesRef);
-                    await update(botMessageRef, {
-                        User: "[Jimmy-Bot]",
-                        Message: `I noticed a grammar mistake in your message, Jimmy! 
-                        <br><br>You wrote: "${originalMessage}"
-                        <br><br>Correction: "${correctedMessage}"`,
-                        Date: Date.now() + 1,
-                    });
 
                     return; // Exit the function to prevent sending the message immediately
                 } else {
